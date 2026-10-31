@@ -8,16 +8,19 @@ export default defineContentScript({
     // TODO: filter out nav/header/footer links? (part of boilerplate removal in content parser)
     // TODO: assess any other filtering criteria?
     const links = new Set<string>();
+    const malformed = new Set<string>(); // hrefs that aren't valid URLs; kept so we can flag them as broken
     for (const a of anchors) {
-      // skip malformed URLs? actually maybe we should have a separate set to store them (TODO)
-      if (!URL.canParse(a.href)) continue;
+      if (!URL.canParse(a.href)) {
+        malformed.add(a.getAttribute('href')!);
+        continue;
+      }
       const url = new URL(a.href);
       if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
       if (isSamePage(url)) continue;
       links.add(normalize(url));
     }
 
-    console.log('[RefDelta]', { title: document.title, links: links.size });
+    console.log('[RefDelta]', { title: document.title, links: links.size, malformed: malformed.size });
   },
 });
 
