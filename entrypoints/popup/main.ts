@@ -51,9 +51,13 @@ function render(analysis: Analysis | undefined) {
 
   const toLookUp = analysis.linksToLookUp ?? [];
   const done = Object.keys(analysis.linkLookups ?? {}).length;
-  const linksLabel = toLookUp.length
+  const totalMs = analysis.totalDurationMs;
+  let linksLabel = toLookUp.length
     ? `${livePage.links.length} links (looked up ${done}/${toLookUp.length})`
     : `${livePage.links.length} links`;
+  if (totalMs !== undefined) {
+    linksLabel += ` — Total: ${(totalMs / 1000).toFixed(1)}s`;
+  }
 
   output.replaceChildren(
     title,
@@ -87,11 +91,11 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
   } else if (!lookup) {
     status = [analysis.linkLookupsStopped ? 'skipped' : 'pending...'];
   } else if ('error' in lookup) {
-    status = [`lookup failed: ${lookup.error}`];
+    status = [`lookup failed: ${lookup.error} (${lookup.durationMs.toFixed(0)}ms)`];
   } else if (!lookup.snapshot) {
-    status = ['no snapshot'];
+    status = [`no snapshot (${lookup.durationMs.toFixed(0)}ms)`];
   } else {
-    status = [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)})`];
+    status = [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms)`];
   }
   return [a, ' — ', ...status];
 }

@@ -71,9 +71,10 @@ function isShareLink(url: URL): boolean {
   const host = withoutWww(url.hostname);
   if (SHARE_ENDPOINTS.some((e) => host === e.host && url.pathname.startsWith(e.path))) return true;
 
-  for (const value of url.searchParams.values()) {
+  // iterate over param values to check if any point back to this page
+  url.searchParams.forEach((value) => {
     if (URL.canParse(value) && isLooselySamePage(new URL(value))) return true;
-  }
+  });
   return false;
 }
 

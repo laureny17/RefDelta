@@ -1,5 +1,5 @@
 import { analysisKey, type Analysis, type LinkLookup, type PageLinks } from '@/lib/analysis';
-import { findLatestSnapshot } from '@/lib/wayback';
+import { findLatestSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError } from '@/lib/waybackQueue';
 
 // max number of L1 links to look up per page (pretty arbitrarily chosen for now)
@@ -7,6 +7,10 @@ import { WaybackRateLimitedError } from '@/lib/waybackQueue';
 // TODO: which links should we analyze? should there be a "smart" way to determine which ones to look into, if we're being selective?
 //       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
 const MAX_LINKS = 50;
+
+// Set to true to use concurrent lookups (all fired at once, paced by queue)
+// Set to false to use sequential lookups (one at a time)
+const USE_CONCURRENT = true;
 
 // mapping for the current analysis run for each tab (tabId -> runId)
 const currentRun = new Map<number, number>();
@@ -70,24 +74,121 @@ async function analyzeTab(tabId: number) {
     await update({ snapshotError: `${err}` });
   }
 
-  // look up the latest snapshot of each L1 link, one at a time (paced by the Wayback queue)
+  // look up the latest snapshot of each L1 link
   const linksToLookUp = livePage.links.slice(0, MAX_LINKS);
   await update({ linksToLookUp, linkLookups: {} });
-  for (const link of linksToLookUp) {
-    if (!isCurrent()) return; // stop if this run is outdated (tab navigated/closed, or Analyze re-clicked)
 
+  if (USE_CONCURRENT) {
+    await analyzeLinksConcurrent(linksToLookUp, analysis, update, isCurrent);
+  } else {
+    await analyzeLinksSequential(linksToLookUp, analysis, update, isCurrent);
+  }
+}
+
+
+async function analyzeLinksSequential(
+  linksToLookUp: string[],
+  analysis: Analysis,
+  update: (changes: Partial<Analysis>) => Promise<void>,
+  isCurrent: () => boolean,
+) {
+  for (const link of linksToLookUp) {
+    if (!isCurrent()) return;
+
+    const startTime = performance.now();
     let result: LinkLookup;
+
     try {
-      result = { snapshot: await findLatestSnapshot(link) };
+      const snapshot = await findLatestSnapshot(link);
+      result = { snapshot, durationMs: performance.now() - startTime };
     } catch (err) {
+      const durationMs = performance.now() - startTime;
       if (err instanceof WaybackRateLimitedError) {
-        // if we hit rate limit, every remaining lookup would fail too, so stop here
         await update({ linkLookupsStopped: err.message });
         return;
       }
-      result = { error: `${err}` }; // e.g. timeout or 5xx; report it and move on to the next link
+      result = { error: `${err}`, durationMs };
     }
+
     console.log('[RefDelta] link lookup', link, result);
-    await update({ linkLookups: { ...analysis.linkLookups, [link]: result } });
+    const updatedLookups = { ...analysis.linkLookups, [link]: result };
+    const totalDurationMs = Object.values(updatedLookups).reduce((sum, r) => sum + r.durationMs, 0);
+    await update({ linkLookups: updatedLookups, totalDurationMs });
   }
+}
+
+// concurrent 
+// fire lookups in parallel with staggered starts to respect rate limit
+// sends requests every 2.5s (24/min), but allows multiple to be ongoing at once
+async function analyzeLinksConcurrent(
+  linksToLookUp: string[],
+  analysis: Analysis,
+  update: (changes: Partial<Analysis>) => Promise<void>,
+  isCurrent: () => boolean,
+) {
+  const MIN_INTERVAL_MS = 2500; 
+  const TIMEOUT_MS = 30000; 
+  let rateLimitHit = false;
+
+  const lookupPromises = linksToLookUp.map(async (link, index) => {
+    const delay = index * MIN_INTERVAL_MS;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    if (!isCurrent() || rateLimitHit) return;
+
+    const startTime = performance.now();
+    let result: LinkLookup;
+
+    try {
+      const snapshot = await findLatestSnapshotParallel(link, TIMEOUT_MS);
+      result = { snapshot, durationMs: performance.now() - startTime };
+    } catch (err) {
+      const durationMs = performance.now() - startTime;
+      if (err instanceof WaybackRateLimitedError) {
+        rateLimitHit = true;
+        await update({ linkLookupsStopped: err.message });
+        return;
+      }
+      result = { error: `${err}`, durationMs };
+    }
+
+    if (!isCurrent() || rateLimitHit) return;
+    const updatedLookups = { ...analysis.linkLookups, [link]: result };
+    const totalDurationMs = Object.values(updatedLookups).reduce((sum, r) => sum + r.durationMs, 0);
+    await update({ linkLookups: updatedLookups, totalDurationMs });
+  });
+
+  await Promise.allSettled(lookupPromises);
+}
+
+
+async function findLatestSnapshotParallel(url: string, timeoutMs: number): Promise<Snapshot | null> {
+  const query = new URL('https://web.archive.org/cdx/search/cdx');
+  query.searchParams.set('url', url);
+  query.searchParams.set('output', 'json');
+  query.searchParams.set('limit', '-1');
+  query.searchParams.set('fl', 'timestamp,original,statuscode');
+
+  let res: Response;
+  try {
+    res = await fetch(query, { signal: AbortSignal.timeout(timeoutMs) });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new Error(`Wayback request timed out after ${timeoutMs / 1000}s`);
+    }
+    throw err;
+  }
+
+  if (res.status === 429) {
+    const blockedUntil = Date.now() + 10 * 60 * 1000; // 10 min default
+    throw new WaybackRateLimitedError(blockedUntil);
+  }
+
+  if (!res.ok) throw new Error(`CDX request failed: ${res.status}`);
+
+  const rows: string[][] = await res.json();
+  if (rows.length < 2) return null;
+
+  const [timestamp, original, statusCode] = rows[1] as [string, string, string];
+  return { timestamp, statusCode, snapshotUrl: `https://web.archive.org/web/${timestamp}/${original}` };
 }
