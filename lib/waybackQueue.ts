@@ -23,6 +23,10 @@ const MIN_INTERVAL_MS = 3000;
 // how long to pause after a 429 if the server doesn't send a Retry-After header
 const DEFAULT_PAUSE_MS = 10 * 60 * 1000; // 10 min
 
+// give up on a request after this long; timeouts are reported as errors (not retried)
+// TODO: look into this more to determine if 30s is appropriate + if we should do smth else on timeouts
+const TIMEOUT_MS = 30 * 1000; // 30 s
+
 // saved in storage.local (not session!!) so the pause survives a browser restart
 const BLOCKED_UNTIL_KEY = 'waybackBlockedUntil';
 
@@ -45,7 +49,15 @@ export function waybackFetch(url: string | URL): Promise<Response> {
     if (wait > 0) await sleep(wait);
 
     lastRequestAt = Date.now();
-    const res = await fetch(url);
+    let res: Response;
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'TimeoutError') {
+        throw new Error(`Wayback request timed out after ${TIMEOUT_MS / 1000}s`);
+      }
+      throw err; // e.g. network error
+    }
     if (res.status === 429) {
       const blockedUntil = Date.now() + retryAfterMs(res);
       await browser.storage.local.set({ [BLOCKED_UNTIL_KEY]: blockedUntil });
