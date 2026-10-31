@@ -1,14 +1,5 @@
 import './style.css';
-import { findLatestSnapshot } from '@/lib/wayback';
-
-// shape of what the content script sends back (see collectLinks in content.ts)
-// TODO: change this interface as content script evolves!
-interface AnalyzeResult {
-  url: string;
-  title: string;
-  links: string[];
-  malformed: string[];
-}
+import { analysisKey, type Analysis } from '@/lib/analysis';
 
 // TODO: change extension to show results as overlay rather than through extension popup
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -20,44 +11,62 @@ app.innerHTML = `
 
 const output = document.querySelector<HTMLDivElement>('#output')!;
 
-document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click', async () => {
-  output.textContent = 'Analyzing...';
-  try {
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    const result: AnalyzeResult = await browser.tabs.sendMessage(tab!.id!, { type: 'analyze' });
-    const title = document.createElement('p');
-    title.textContent = result.title;
-    const snapshot = document.createElement('p');
-    snapshot.textContent = 'Looking up Wayback snapshot...';
-    output.replaceChildren(
-      title,
-      snapshot,
-      expandableList(`${result.links.length} links`, result.links, true),
-      expandableList(`${result.malformed.length} malformed`, result.malformed, false),
-    );
-    showSnapshot(snapshot, result.url);
-  } catch (err) {
-    output.textContent = `Could not analyze page: ${err}`;
-  }
+// display of results in popup is a TEMPORARY feature
+// background script does the work and saves results to storage.session -> closing the popup doesn't stop analysis
+// TEMPORARY: using storage.session for now;
+// TODO: replace/complement with IndexedDB
+const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+const tabId = tab!.id!;
+const key = analysisKey(tabId);
+
+// show any results from an earlier run of the same page on this tab
+const stored = await browser.storage.session.get(key);
+render(stored[key] as Analysis | undefined);
+
+// re-render whenever the background script re-saves progress
+browser.storage.session.onChanged.addListener((changes) => {
+  if (changes[key]) render(changes[key].newValue as Analysis | undefined);
 });
 
-// fills in the snapshot line once the CDX lookup finishes
-async function showSnapshot(el: HTMLElement, url: string) {
-  try {
-    const snapshot = await findLatestSnapshot(url);
-    if (!snapshot) {
-      el.textContent = 'No Wayback snapshot found';
-      return;
-    }
+document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click', () => {
+  output.textContent = 'Analyzing...';
+  browser.runtime.sendMessage({ type: 'analyze-tab', tabId });
+});
+
+function render(analysis: Analysis | undefined) {
+  if (!analysis) return; // not analyzed yet
+  if (analysis.error) {
+    output.textContent = analysis.error;
+    return;
+  }
+  const livePage = analysis.livePage!;
+  const title = document.createElement('p');
+  title.textContent = livePage.title;
+  output.replaceChildren(
+    title,
+    snapshotLine(analysis),
+    expandableList(`${livePage.links.length} links`, livePage.links, true),
+    expandableList(`${livePage.malformed.length} malformed`, livePage.malformed, false),
+  );
+}
+
+function snapshotLine({ snapshot, snapshotError }: Analysis): HTMLParagraphElement {
+  const el = document.createElement('p');
+  if (snapshotError) {
+    el.textContent = `Snapshot lookup failed: ${snapshotError}`;
+  } else if (snapshot === undefined) {
+    el.textContent = 'Looking up Wayback snapshot...';
+  } else if (snapshot === null) {
+    el.textContent = 'No Wayback snapshot found';
+  } else {
     const t = snapshot.timestamp;
     const a = document.createElement('a');
     a.href = snapshot.snapshotUrl;
     a.target = '_blank';
     a.textContent = `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}`;
-    el.replaceChildren('Latest snapshot: ', a, ` (${snapshot.statusCode})`);
-  } catch (err) {
-    el.textContent = `Snapshot lookup failed: ${err}`;
+    el.append('Latest snapshot: ', a, ` (${snapshot.statusCode})`);
   }
+  return el;
 }
 
 // TEMPORARY; for testing / minimal functionality purposes
