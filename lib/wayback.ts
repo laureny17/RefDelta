@@ -1,6 +1,8 @@
 // Wayback Machine snapshot lookup via the CDX API.
 // docs: https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
 
+import { waybackFetch } from './waybackQueue';
+
 export interface Snapshot {
   timestamp: string; // "YYYYMMDDhhmmss", as returned by CDX
   statusCode: string; // HTTP status the archiver got, e.g. "200", "301", "404" ("-" for some records)
@@ -19,7 +21,7 @@ export async function findLatestSnapshot(url: string): Promise<Snapshot | null> 
   query.searchParams.set('limit', '-1'); // negative limit = last N results, i.e. -1 = most recent
   query.searchParams.set('fl', 'timestamp,original,statuscode'); // fields to return in the response
 
-  const res = await fetch(query);
+  const res = await waybackFetch(query); // paced + pauses on 429; see waybackQueue.ts
   if (!res.ok) throw new Error(`CDX request failed: ${res.status}`);
 
   const rows: string[][] = await res.json();
