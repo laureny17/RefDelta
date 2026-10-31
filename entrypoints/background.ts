@@ -1,5 +1,12 @@
-import { analysisKey, type Analysis, type PageLinks } from '@/lib/analysis';
+import { analysisKey, type Analysis, type LinkLookup, type PageLinks } from '@/lib/analysis';
 import { findLatestSnapshot } from '@/lib/wayback';
+import { WaybackRateLimitedError } from '@/lib/waybackQueue';
+
+// max number of L1 links to look up per page (pretty arbitrarily chosen for now)
+// note that waybackFetch is limited to ~20 Wayback requests/min (see waybackQueue.ts)
+// TODO: which links should we analyze? should there be a "smart" way to determine which ones to look into, if we're being selective?
+//       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
+const MAX_LINKS = 50;
 
 // mapping for the current analysis run for each tab (tabId -> runId)
 const currentRun = new Map<number, number>();
@@ -36,9 +43,14 @@ async function analyzeTab(tabId: number) {
   currentRun.set(tabId, runId);
   // clear old results first
   await browser.storage.session.remove(key);
-  const save = async (analysis: Analysis) => {
-    if (currentRun.get(tabId) !== runId) return; // superseded; drop stale results
-    await browser.storage.session.set({ [key]: analysis });
+  const isCurrent = () => currentRun.get(tabId) === runId;
+
+  // accumulated results; each update merges in new fields and re-saves the whole thing
+  const analysis: Analysis = {};
+  const update = async (changes: Partial<Analysis>) => {
+    Object.assign(analysis, changes);
+    // only save if this run is still current (else outdated: tab navigated/closed, or Analyze re-clicked)
+    if (isCurrent()) await browser.storage.session.set({ [key]: analysis });
   };
 
   let livePage: PageLinks;
@@ -46,15 +58,36 @@ async function analyzeTab(tabId: number) {
   try {
     livePage = await browser.tabs.sendMessage(tabId, { type: 'analyze' });
   } catch (err) {
-    await save({ error: `Could not analyze page: ${err}` });
+    await update({ error: `Could not analyze page: ${err}` });
     return;
   }
-  await save({ livePage }); // links ready; snapshot still pending
+  await update({ livePage }); // links ready; snapshot still pending
 
   // try to find the latest Wayback snapshot for the page
   try {
-    await save({ livePage, snapshot: await findLatestSnapshot(livePage.url) });
+    await update({ snapshot: await findLatestSnapshot(livePage.url) });
   } catch (err) {
-    await save({ livePage, snapshotError: `${err}` });
+    await update({ snapshotError: `${err}` });
+  }
+
+  // look up the latest snapshot of each L1 link, one at a time (paced by the Wayback queue)
+  const linksToLookUp = livePage.links.slice(0, MAX_LINKS);
+  await update({ linksToLookUp, linkLookups: {} });
+  for (const link of linksToLookUp) {
+    if (!isCurrent()) return; // stop if this run is outdated (tab navigated/closed, or Analyze re-clicked)
+
+    let result: LinkLookup;
+    try {
+      result = { snapshot: await findLatestSnapshot(link) };
+    } catch (err) {
+      if (err instanceof WaybackRateLimitedError) {
+        // if we hit rate limit, every remaining lookup would fail too, so stop here
+        await update({ linkLookupsStopped: err.message });
+        return;
+      }
+      result = { error: `${err}` }; // e.g. timeout or 5xx; report it and move on to the next link
+    }
+    console.log('[RefDelta] link lookup', link, result);
+    await update({ linkLookups: { ...analysis.linkLookups, [link]: result } });
   }
 }
