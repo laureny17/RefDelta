@@ -1,8 +1,10 @@
 import './style.css';
+import { findLatestSnapshot } from '@/lib/wayback';
 
 // shape of what the content script sends back (see collectLinks in content.ts)
 // TODO: change this interface as content script evolves!
 interface AnalyzeResult {
+  url: string;
   title: string;
   links: string[];
   malformed: string[];
@@ -25,15 +27,38 @@ document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click',
     const result: AnalyzeResult = await browser.tabs.sendMessage(tab!.id!, { type: 'analyze' });
     const title = document.createElement('p');
     title.textContent = result.title;
+    const snapshot = document.createElement('p');
+    snapshot.textContent = 'Looking up Wayback snapshot...';
     output.replaceChildren(
       title,
+      snapshot,
       expandableList(`${result.links.length} links`, result.links, true),
       expandableList(`${result.malformed.length} malformed`, result.malformed, false),
     );
+    showSnapshot(snapshot, result.url);
   } catch (err) {
     output.textContent = `Could not analyze page: ${err}`;
   }
 });
+
+// fills in the snapshot line once the CDX lookup finishes
+async function showSnapshot(el: HTMLElement, url: string) {
+  try {
+    const snapshot = await findLatestSnapshot(url);
+    if (!snapshot) {
+      el.textContent = 'No Wayback snapshot found';
+      return;
+    }
+    const t = snapshot.timestamp;
+    const a = document.createElement('a');
+    a.href = snapshot.snapshotUrl;
+    a.target = '_blank';
+    a.textContent = `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}`;
+    el.replaceChildren('Latest snapshot: ', a, ` (${snapshot.statusCode})`);
+  } catch (err) {
+    el.textContent = `Snapshot lookup failed: ${err}`;
+  }
+}
 
 // TEMPORARY; for testing / minimal functionality purposes
 function expandableList(label: string, items: string[], asLinks: boolean): HTMLDetailsElement {

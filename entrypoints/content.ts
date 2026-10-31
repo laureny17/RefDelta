@@ -33,7 +33,7 @@ function collectLinks() {
     links.add(normalize(url));
   }
 
-  return { title: document.title, links: [...links], malformed: [...malformed] };
+  return { url: location.href, title: document.title, links: [...links], malformed: [...malformed] };
 }
 
 // helper: check if URL points to same page as the current page (i.e. we are ignoring fragments like "#introduction")
