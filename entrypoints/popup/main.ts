@@ -1,5 +1,6 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
+import type { Snapshot } from '@/lib/wayback';
 
 // TODO: change extension to show results as overlay rather than through extension popup
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -42,12 +43,57 @@ function render(analysis: Analysis | undefined) {
   const livePage = analysis.livePage!;
   const title = document.createElement('p');
   title.textContent = livePage.title;
+
+  // re-renders on every saved result, so remember which lists were expanded
+  const open = new Set(
+    [...output.querySelectorAll<HTMLDetailsElement>('details[open]')].map((d) => d.dataset.key),
+  );
+
+  const toLookUp = analysis.linksToLookUp ?? [];
+  const done = Object.keys(analysis.linkLookups ?? {}).length;
+  const linksLabel = toLookUp.length
+    ? `${livePage.links.length} links (looked up ${done}/${toLookUp.length})`
+    : `${livePage.links.length} links`;
+
   output.replaceChildren(
     title,
     snapshotLine(analysis),
-    expandableList(`${livePage.links.length} links`, livePage.links, true),
-    expandableList(`${livePage.malformed.length} malformed`, livePage.malformed, false),
+    expandableList('links', linksLabel, livePage.links.map((link) => linkItem(link, analysis)), open),
+    expandableList(
+      'malformed',
+      `${livePage.malformed.length} malformed`,
+      livePage.malformed.map((href) => [href]), // show malformed hrefs as plain text
+      open,
+    ),
   );
+  if (analysis.linkLookupsStopped) {
+    const stopped = document.createElement('p');
+    stopped.textContent = `Link lookups stopped: ${analysis.linkLookupsStopped}`;
+    output.append(stopped);
+  }
+}
+
+// one link in the list: the URL, then its Wayback lookup status
+function linkItem(link: string, analysis: Analysis): (string | Node)[] {
+  const a = document.createElement('a');
+  a.href = link;
+  a.target = '_blank';
+  a.textContent = link;
+
+  const lookup = analysis.linkLookups?.[link];
+  let status: (string | Node)[];
+  if (!analysis.linksToLookUp?.includes(link)) {
+    status = ['not checked']; // beyond MAX_LINKS
+  } else if (!lookup) {
+    status = [analysis.linkLookupsStopped ? 'skipped' : 'pending...'];
+  } else if ('error' in lookup) {
+    status = [`lookup failed: ${lookup.error}`];
+  } else if (!lookup.snapshot) {
+    status = ['no snapshot'];
+  } else {
+    status = [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)})`];
+  }
+  return [a, ' — ', ...status];
 }
 
 function snapshotLine({ snapshot, snapshotError }: Analysis): HTMLParagraphElement {
@@ -59,33 +105,45 @@ function snapshotLine({ snapshot, snapshotError }: Analysis): HTMLParagraphEleme
   } else if (snapshot === null) {
     el.textContent = 'No Wayback snapshot found';
   } else {
-    const t = snapshot.timestamp;
-    const a = document.createElement('a');
-    a.href = snapshot.snapshotUrl;
-    a.target = '_blank';
-    a.textContent = `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}`;
-    el.append('Latest snapshot: ', a, ` (${snapshot.statusCode})`);
+    el.append('Latest snapshot: ', snapshotLink(snapshot), ` (${statusLabel(snapshot.statusCode)})`);
   }
   return el;
 }
 
+// CDX shows "-" for "revisit" captures: the Internet Archive found the page identical to one of
+// its earlier captures and stored a pointer instead of a copy, so no status code was recorded
+// TODO: how to handle non-200 / revisit captures ?
+function statusLabel(statusCode: string): string {
+  return statusCode === '-' ? 'unchanged since earlier capture' : statusCode;
+}
+
+// snapshot date (YYYY-MM-DD), linking to the archived page
+function snapshotLink(snapshot: Snapshot): HTMLAnchorElement {
+  const t = snapshot.timestamp;
+  const a = document.createElement('a');
+  a.href = snapshot.snapshotUrl;
+  a.target = '_blank';
+  a.textContent = `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}`;
+  return a;
+}
+
 // TEMPORARY; for testing / minimal functionality purposes
-function expandableList(label: string, items: string[], asLinks: boolean): HTMLDetailsElement {
+// `key` identifies the list across re-renders (to keep it expanded); each item is the content of one <li>
+function expandableList(
+  key: string,
+  label: string,
+  items: (string | Node)[][],
+  open: Set<string | undefined>,
+): HTMLDetailsElement {
   const details = document.createElement('details');
+  details.dataset.key = key;
+  details.open = open.has(key);
   const summary = document.createElement('summary');
   summary.textContent = label;
   const list = document.createElement('ol');
   for (const item of items) {
     const li = document.createElement('li');
-    if (asLinks) {
-      const a = document.createElement('a');
-      a.href = item;
-      a.target = '_blank';
-      a.textContent = item;
-      li.append(a);
-    } else {
-      li.textContent = item; // show malformed hrefs as plain text
-    }
+    li.append(...item);
     list.append(li);
   }
   details.append(summary, list);
