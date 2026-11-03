@@ -69,6 +69,20 @@ function render(analysis: Analysis | undefined) {
       livePage.malformed.map((href) => [href]), // show malformed hrefs as plain text
       open,
     ),
+    // TEMPORARY: parser output, for testing extraction + boilerplate removal (see lib/parse/)
+    expandableList('blocks', `${livePage.blocks.length} content blocks`, livePage.blocks.map((b) => [b]), open),
+    expandableList(
+      'boilerplate-blocks',
+      `${livePage.boilerplate.blocks.length} boilerplate blocks (removed)`,
+      livePage.boilerplate.blocks.map((b) => [b]),
+      open,
+    ),
+    expandableList(
+      'boilerplate-links',
+      `${livePage.boilerplate.links.length} boilerplate links (removed)`,
+      livePage.boilerplate.links.map((link) => [plainLink(link)]),
+      open,
+    ),
   );
   if (analysis.linkLookupsStopped) {
     const stopped = document.createElement('p');
@@ -79,10 +93,7 @@ function render(analysis: Analysis | undefined) {
 
 // one link in the list: the URL, then its Wayback lookup status
 function linkItem(link: string, analysis: Analysis): (string | Node)[] {
-  const a = document.createElement('a');
-  a.href = link;
-  a.target = '_blank';
-  a.textContent = link;
+  const a = plainLink(link);
 
   const lookup = analysis.linkLookups?.[link];
   let status: (string | Node)[];
@@ -98,6 +109,15 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
     status = [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms)`];
   }
   return [a, ' — ', ...status];
+}
+
+// a link that opens in a new tab, showing its URL
+function plainLink(link: string): HTMLAnchorElement {
+  const a = document.createElement('a');
+  a.href = link;
+  a.target = '_blank';
+  a.textContent = link;
+  return a;
 }
 
 function snapshotLine({ snapshot, snapshotError }: Analysis): HTMLParagraphElement {

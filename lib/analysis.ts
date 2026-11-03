@@ -1,19 +1,11 @@
+import type { PageContent } from './parse/extract';
 import type { Snapshot } from './wayback';
-
-// what the content script sends back (the link fields of PageContent; see lib/parse/extract.ts)
-// TODO: change this interface as content script evolves!
-export interface PageLinks {
-  url: string;
-  title: string;
-  links: string[];
-  malformed: string[];
-}
 
 // analysis state for one tab, written by the background script and rendered by the popup.
 // fields fill in as each stage finishes
 export interface Analysis {
   error?: string; // analysis failed
-  livePage?: PageLinks;
+  livePage?: PageContent; // what the content script sends back (see lib/parse/extract.ts)
   snapshot?: Snapshot | null; // undefined = lookup in progress, null = no snapshot found
   snapshotError?: string;
   linksToLookUp?: string[]; // the L1 links we'll look up snapshots for (capped; see MAX_LINKS)

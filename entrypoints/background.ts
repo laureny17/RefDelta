@@ -1,4 +1,5 @@
-import { analysisKey, type Analysis, type LinkLookup, type PageLinks } from '@/lib/analysis';
+import { analysisKey, type Analysis, type LinkLookup } from '@/lib/analysis';
+import type { PageContent } from '@/lib/parse/extract';
 import { findLatestSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, pauseForRateLimit, throwIfPaused, waitForSlot } from '@/lib/waybackQueue';
 
@@ -57,7 +58,7 @@ async function analyzeTab(tabId: number) {
     if (isCurrent()) await browser.storage.session.set({ [key]: analysis });
   };
 
-  let livePage: PageLinks;
+  let livePage: PageContent;
   // try to get the page links from the content script
   try {
     livePage = await browser.tabs.sendMessage(tabId, { type: 'analyze' });
