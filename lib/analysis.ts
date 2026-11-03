@@ -1,6 +1,6 @@
 import type { Snapshot } from './wayback';
 
-// what the content script sends back (see collectLinks in content.ts)
+// what the content script sends back (the link fields of PageContent; see lib/parse/extract.ts)
 // TODO: change this interface as content script evolves!
 export interface PageLinks {
   url: string;
