@@ -8,9 +8,10 @@ export default defineContentScript({
     browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.type === 'analyze') {
         // parsing + link filtering live in lib/parse/ (shared with snapshot parsing)
-        const { url, title, links, malformed } = extract(document, location.href);
+        const content = extract(document, location.href);
+        console.log('[RefDelta]', content); // full parse output (blocks, text, links, ...) for debugging
+        const { url, title, links, malformed } = content;
         const result: PageLinks = { url, title, links, malformed };
-        console.log('[RefDelta]', result);
         sendResponse(result);
       }
     });
