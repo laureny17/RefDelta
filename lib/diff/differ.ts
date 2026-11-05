@@ -19,7 +19,10 @@ export abstract class Differ<R extends Representation> {
 
     protected abstract parse(html: string): R;
 
-    protected abstract computeSimilarity(oldRep: R, newRep: R): number;
+    // `diff` is passed when compare() already computed one, so algorithms whose similarity comes from the diff
+    // (e.g. Myers) can reuse it; algorithms with a cheaper way (e.g. shingling) can ignore it.
+    // kept separate from computeDiff so we can later get just the similarity without a full diff
+    protected abstract computeSimilarity(oldRep: R, newRep: R, diff?: DiffResult): number;
 
     protected abstract computeDiff(oldRep: R, newRep: R): DiffResult;
 
@@ -35,7 +38,7 @@ export abstract class Differ<R extends Representation> {
         diff.stats.timeMs = performance.now() - start;
 
         // not included in timeMs
-        const similarity = this.computeSimilarity(oldRep, newRep);
+        const similarity = this.computeSimilarity(oldRep, newRep, diff);
 
         const classification = this.classifier?.classify(diff);
 

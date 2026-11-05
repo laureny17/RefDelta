@@ -37,10 +37,11 @@ export class MyersDiffer extends Differ<TextRep> {
   }
 
   // fraction of tokens the two versions share: 2 * equal / (old + new)
-  // (Myers has no cheaper way to get this than running the diff again)
-  protected computeSimilarity(oldRep: TextRep, newRep: TextRep): number {
+  // needs the diff's count of equal tokens: reuses `diff` if given, otherwise runs the diff
+  protected computeSimilarity(oldRep: TextRep, newRep: TextRep, diff?: DiffResult): number {
     const total = oldRep.tokens.length + newRep.tokens.length;
-    return total === 0 ? 1 : (2 * this.myers(oldRep, newRep).counts.equal) / total;
+    const { counts } = diff ? (diff.diff as MyersDiff) : this.myers(oldRep, newRep);
+    return total === 0 ? 1 : (2 * counts.equal) / total;
   }
 
   protected computeDiff(oldRep: TextRep, newRep: TextRep): DiffResult {
