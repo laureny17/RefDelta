@@ -8,7 +8,8 @@ import type {  Classification,
 
 export interface CompareResult {
     diff: DiffResult;
-    classification: Classification;
+    similarity: number; // from computeSimilarity: 1 = identical, 0 = nothing in common
+    classification?: Classification; // undefined if this differ has no classifier
 }
 
 export abstract class Differ<R extends Representation> {
@@ -18,7 +19,10 @@ export abstract class Differ<R extends Representation> {
 
     protected abstract parse(html: string): R;
 
-    protected abstract computeSimilarity(oldRep: R, newRep: R): number;
+    // `diff` is passed when compare() already computed one, so algorithms whose similarity comes from the diff
+    // (e.g. Myers) can reuse it; algorithms with a cheaper way (e.g. shingling) can ignore it.
+    // kept separate from computeDiff so we can later get just the similarity without a full diff
+    protected abstract computeSimilarity(oldRep: R, newRep: R, diff?: DiffResult): number;
 
     protected abstract computeDiff(oldRep: R, newRep: R): DiffResult;
 
@@ -33,10 +37,11 @@ export abstract class Differ<R extends Representation> {
 
         diff.stats.timeMs = performance.now() - start;
 
-        const classification = this.classifier
-        ? this.classifier.classify(diff)
-        : { label: "unchanged" as const, kinds: [] };
+        // not included in timeMs
+        const similarity = this.computeSimilarity(oldRep, newRep, diff);
 
-        return { diff, classification };
+        const classification = this.classifier?.classify(diff);
+
+        return { diff, similarity, classification };
     }
 }

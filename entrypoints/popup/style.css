@@ -95,3 +95,33 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* TEMPORARY: differ metrics section (see metricsSection in main.ts) */
+.differ-metrics {
+  text-align: left;
+}
+.differ-metrics table {
+  border-collapse: collapse;
+  font-size: 0.85em;
+}
+.differ-metrics th,
+.differ-metrics td {
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.diff-preview {
+  white-space: pre-wrap;
+  font-size: 0.85em;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.diff-preview .equal {
+  opacity: 0.6;
+}
+.diff-preview .insert {
+  background: rgba(46, 160, 67, 0.35);
+}
+.diff-preview .delete {
+  background: rgba(248, 81, 73, 0.35);
+  text-decoration: line-through;
+}
