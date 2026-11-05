@@ -23,6 +23,11 @@ export type DifferMetrics =
     }
   | { algorithm: string; error: string };
 
+// like DifferMetrics, but from Differ.similarity(): no diff, so no diff time / size / preview
+export type SimilarityMetrics =
+  | { algorithm: string; timings: Omit<Timings, 'diffMs'>; similarity: number; label?: string }
+  | { algorithm: string; error: string };
+
 // `preview: false` leaves out the diff previews (e.g. for L1 links, to keep the saved results small)
 export function measureDiffers(snapshotHtml: string, liveHtml: string, { preview = true } = {}): DifferMetrics[] {
   return DIFFERS.map((differ) => {
@@ -36,6 +41,18 @@ export function measureDiffers(snapshotHtml: string, liveHtml: string, { preview
         label: classification?.label,
         ...(preview && { preview: differ.preview(diff) }),
       };
+    } catch (err) {
+      return { algorithm: differ.name, error: `${err}` };
+    }
+  });
+}
+
+// just each differ's similarity, without computing the diff (for L1 links in 'similarity' mode; see lib/linkDiff.ts)
+export function measureSimilarity(snapshotHtml: string, liveHtml: string): SimilarityMetrics[] {
+  return DIFFERS.map((differ) => {
+    try {
+      const { similarity, classification, timings } = differ.similarity(snapshotHtml, liveHtml);
+      return { algorithm: differ.name, timings, similarity, label: classification?.label };
     } catch (err) {
       return { algorithm: differ.name, error: `${err}` };
     }

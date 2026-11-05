@@ -24,7 +24,7 @@ live HTML ─────┘                         └─ computeSimilarity �
 
 `compare()` also returns a classification (unchanged / minor / major) from the similarity, if the differ has a `Classifier` (`lib/classify/classify-interface.ts`); none exists yet as of 11/04
 
-`Differ.similarity(oldHtml, newHtml)` gets **just the similarity**, without a diff: it runs only `parse` + `computeSimilarity` (with no `diff` passed in). It's for the L1 links: we could compare every link's full diff up front vs. only a similarity during the crawl, with the full diff computed when the user opens the link. No need to write anything extra for it, as long as your `computeSimilarity` works without a diff. Nothing calls it yet (as of 11/04).
+`Differ.similarity(oldHtml, newHtml)` gets **just the similarity**, without a diff: it runs only `parse` + `computeSimilarity` (with no `diff` passed in). It's for the L1 links: we could compare every link's full diff up front vs. only a similarity during the crawl, with the full diff computed when the user opens the link. No need to write anything extra for it, as long as your `computeSimilarity` works without a diff. Used for L1 links when `L1_STRATEGY = 'similarity'` (`lib/linkDiff.ts`).
 
 ## Representations
 
@@ -124,5 +124,5 @@ So we can build concurrently:
 ## TODOs
 
 - **Classifier:** labels unchanged / minor / major from the similarity; thresholds to be set by experiments; not built yet
-- **L1 links:** right now, every L1 link with a snapshot gets a full diff from every algorithm during Analyze (`lib/linkDiff.ts`). The other option, still to try: only compute a quick similarity score per link during Analyze, and the full diff only when the user opens that link; then compare the two (speed, storage)
+- **L1 links:** `L1_STRATEGY` in `lib/linkDiff.ts` picks between a full diff for every link during Analyze (`'full'`) and only a similarity score per link (`'similarity'`). (in `'similarity'` mode, opening the link and clicking Analyze gives its full diff). Storage can't be compared yet, since neither mode saves diffs
 - **Measuring accuracy:** Might want to have some way of scoring/benchmarking(?) the algorithms somehow, if we're looking to have some sort of quantitative comparison.
