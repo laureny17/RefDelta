@@ -15,9 +15,16 @@ export interface PageContent {
   text: string; // all main content text: blocks joined with "\n"
   links: string[]; // outbound links in the main content (filtered + normalized; see links.ts)
   malformed: string[]; // hrefs that aren't valid URLs
+  images: Image[]; // images in the main content, in page order
   // what boilerplate removal took out (menus, footers, sidebars, everything outside <main>, and blocks
   // Kohlschütter's classifier dropped), kept separately since boilerplate changes can matter too
-  boilerplate: { blocks: string[]; links: string[] };
+  boilerplate: { blocks: string[]; links: string[]; images: Image[] };
+}
+
+// an <img>, identified by its URL + alt text (not its contents; see extractImages)
+export interface Image {
+  src: string; // absolute URL
+  alt: string;
 }
 
 export interface ExtractOptions {
@@ -27,7 +34,7 @@ export interface ExtractOptions {
 }
 
 // boilerplate removal happens in two steps:
-//   1. tag rules (splitContent): drop nav/header/footer/etc. and anything outside <main>; applies to text AND links
+//   1. tag rules (splitContent): drop nav/header/footer/etc. and anything outside <main>; applies to text, links + images
 //   2. Kohlschütter's classifier: drop short, link-heavy text blocks; applies to TEXT ONLY.
 //      it classifies the whole page (like the paper), but we only use its results inside the main content
 //
@@ -35,7 +42,7 @@ export interface ExtractOptions {
 export function extract(doc: Document, pageUrl: string, options: ExtractOptions = {}): PageContent {
   const { kohlschutter = false } = options;
   if (!doc.body) {
-    return { url: pageUrl, title: doc.title.trim(), blocks: [], text: '', links: [], malformed: [], boilerplate: { blocks: [], links: [] } };
+    return { url: pageUrl, title: doc.title.trim(), blocks: [], text: '', links: [], malformed: [], images: [], boilerplate: { blocks: [], links: [], images: [] } };
   }
   // copy so we don't modify the real page; script/style/hidden elements and Wayback's toolbar aren't content at all
   const page = doc.body.cloneNode(true) as Element;
@@ -50,12 +57,14 @@ export function extract(doc: Document, pageUrl: string, options: ExtractOptions 
   const base = baseUrl(doc, pageUrl);
   const { links, malformed } = extractLinks(split.main, pageUrl, base);
   const blocks = toBlocks(split.main, new Set(removed.flat()));
+  const images = extractImages(split.main, base);
   const boilerplate = {
     blocks: [...toBlocks(split.boilerplate), ...removed.map(textOf)],
     links: extractLinks(split.boilerplate, pageUrl, base).links,
+    images: extractImages(split.boilerplate, base),
   };
 
-  return { url: pageUrl, title: doc.title.trim(), blocks, text: blocks.join('\n'), links, malformed, boilerplate };
+  return { url: pageUrl, title: doc.title.trim(), blocks, text: blocks.join('\n'), links, malformed, images, boilerplate };
 }
 
 // elements whose text isn't visible page content
@@ -126,6 +135,22 @@ function toBlocks(root: Element, skip: Set<Node> = new Set()): string[] {
   walk(root);
   flush();
   return blocks;
+}
+
+// every <img> with an http(s) src, resolved against `base`, in page order (duplicates kept, since order matters for diffing)
+// skips data: URIs (usually tiny icons/placeholders, and can be huge strings) and srcs that aren't valid URLs.
+// snapshots fetched with "id_" keep their original image URLs, so live and snapshot srcs can be compared directly
+// TODO: maybe hash image contents to catch an image that changed but kept its URL? This could be an extra Wayback request, though...
+function extractImages(root: Element, base: string): Image[] {
+  const images: Image[] = [];
+  for (const img of root.querySelectorAll('img[src]')) {
+    const src = img.getAttribute('src')!;
+    if (!URL.canParse(src, base)) continue;
+    const url = new URL(src, base);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
+    images.push({ src: url.href, alt: (img.getAttribute('alt') ?? '').replace(/\s+/g, ' ').trim() });
+  }
+  return images;
 }
 
 // the text of a list of text nodes, whitespace collapsed

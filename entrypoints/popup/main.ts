@@ -1,5 +1,6 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
+import type { Image } from '@/lib/parse/extract';
 import type { Snapshot } from '@/lib/wayback';
 
 // TODO: change extension to show results as overlay rather than through extension popup
@@ -71,6 +72,7 @@ function render(analysis: Analysis | undefined) {
     ),
     // TEMPORARY: parser output, for testing extraction + boilerplate removal (see lib/parse/)
     expandableList('blocks', `${livePage.blocks.length} content blocks`, livePage.blocks.map((b) => [b]), open),
+    expandableList('images', `${livePage.images.length} images`, livePage.images.map(imageItem), open),
     expandableList(
       'boilerplate-blocks',
       `${livePage.boilerplate.blocks.length} boilerplate blocks (removed)`,
@@ -81,6 +83,12 @@ function render(analysis: Analysis | undefined) {
       'boilerplate-links',
       `${livePage.boilerplate.links.length} boilerplate links (removed)`,
       livePage.boilerplate.links.map((link) => [plainLink(link)]),
+      open,
+    ),
+    expandableList(
+      'boilerplate-images',
+      `${livePage.boilerplate.images.length} boilerplate images (removed)`,
+      livePage.boilerplate.images.map(imageItem),
       open,
     ),
   );
@@ -109,6 +117,11 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
     status = [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms)`];
   }
   return [a, ' — ', ...status];
+}
+
+// one image in the list: its URL, then its alt text (if any)
+function imageItem({ src, alt }: Image): (string | Node)[] {
+  return alt ? [plainLink(src), ` — "${alt}"`] : [plainLink(src)];
 }
 
 // a link that opens in a new tab, showing its URL
