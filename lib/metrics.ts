@@ -19,11 +19,12 @@ export type DifferMetrics =
       sizeBytes: number; // size of the diff as JSON
       similarity: number; // 0-1, from the differ's computeSimilarity
       label?: string; // classifier output; undefined = no classifier yet
-      preview: PreviewRun[]; // what changed, shortened for display
+      preview?: PreviewRun[]; // what changed, shortened for display; left out with { preview: false }
     }
   | { algorithm: string; error: string };
 
-export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
+// `preview: false` leaves out the diff previews (e.g. for L1 links, to keep the saved results small)
+export function measureDiffers(snapshotHtml: string, liveHtml: string, { preview = true } = {}): DifferMetrics[] {
   return DIFFERS.map((differ) => {
     try {
       const { diff, similarity, classification, timings } = differ.compare(snapshotHtml, liveHtml);
@@ -33,7 +34,7 @@ export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMe
         sizeBytes: diff.stats.sizeBytes,
         similarity,
         label: classification?.label,
-        preview: differ.preview(diff),
+        ...(preview && { preview: differ.preview(diff) }),
       };
     } catch (err) {
       return { algorithm: differ.name, error: `${err}` };
