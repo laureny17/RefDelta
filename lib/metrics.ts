@@ -1,7 +1,7 @@
 // runs every differ on (snapshot, live page) and summarizes the results for the popup
 // TEMPORARY: results are only shown in the popup for now, not stored
 
-import type { Differ } from './diff/differ';
+import type { Differ, Timings } from './diff/differ';
 import type { DiffResult, Representation } from './diff/diff-interfaces';
 import { MyersDiffer, type MyersDiff } from './diff/myers';
 
@@ -11,7 +11,7 @@ const DIFFERS: Differ<Representation>[] = [new MyersDiffer('word'), new MyersDif
 export type DifferMetrics =
   | {
       algorithm: string;
-      timeMs: number; // parse + diff (Differ.compare() times them together)
+      timings: Timings; // parse / diff / similarity, in ms
       sizeBytes: number; // size of the diff as JSON
       similarity: number; // 0-1, from the differ's computeSimilarity
       label?: string; // classifier output; undefined = no classifier yet
@@ -27,10 +27,10 @@ export interface PreviewRun {
 export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
   return DIFFERS.map((differ) => {
     try {
-      const { diff, similarity, classification } = differ.compare(snapshotHtml, liveHtml);
+      const { diff, similarity, classification, timings } = differ.compare(snapshotHtml, liveHtml);
       return {
         algorithm: diff.algorithm,
-        timeMs: diff.stats.timeMs,
+        timings,
         sizeBytes: diff.stats.sizeBytes,
         similarity,
         label: classification?.label,

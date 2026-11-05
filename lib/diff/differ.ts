@@ -10,6 +10,14 @@ export interface CompareResult {
     diff: DiffResult;
     similarity: number; // from computeSimilarity: 1 = identical, 0 = nothing in common
     classification?: Classification; // undefined if this differ has no classifier
+    timings: Timings;
+}
+
+// how long each step of compare() took, in ms
+export interface Timings {
+    parseMs: number; // time spent turning both pages' HTML into what the differ compares (e.g. Myers: a list of words)
+    diffMs: number; // computeDiff
+    similarityMs: number; // computeSimilarity
 }
 
 export abstract class Differ<R extends Representation> {
@@ -28,20 +36,18 @@ export abstract class Differ<R extends Representation> {
 
     compare(oldHtml: string, newHtml: string): CompareResult {
 
-        const start = performance.now();
-
+        const t0 = performance.now();
         const oldRep = this.parse(oldHtml);
         const newRep = this.parse(newHtml);
-
+        const t1 = performance.now();
         const diff = this.computeDiff(oldRep, newRep);
-
-        diff.stats.timeMs = performance.now() - start;
-
-        // not included in timeMs
+        const t2 = performance.now();
         const similarity = this.computeSimilarity(oldRep, newRep, diff);
+        const t3 = performance.now();
 
         const classification = this.classifier?.classify(diff);
+        const timings = { parseMs: t1 - t0, diffMs: t2 - t1, similarityMs: t3 - t2 };
 
-        return { diff, similarity, classification };
+        return { diff, similarity, classification, timings };
     }
 }

@@ -53,17 +53,14 @@ function render(analysis: Analysis | undefined) {
 
   const toLookUp = analysis.linksToLookUp ?? [];
   const done = Object.keys(analysis.linkLookups ?? {}).length;
-  const totalMs = analysis.totalDurationMs;
-  let linksLabel = toLookUp.length
+  const linksLabel = toLookUp.length
     ? `${livePage.links.length} links (looked up ${done}/${toLookUp.length})`
     : `${livePage.links.length} links`;
-  if (totalMs !== undefined) {
-    linksLabel += ` — Total: ${(totalMs / 1000).toFixed(1)}s`;
-  }
 
   output.replaceChildren(
     title,
     snapshotLine(analysis),
+    timesSection(analysis),
     metricsSection(analysis, open), // stats from running each differ on the snapshot vs the live page
     expandableList('links', linksLabel, livePage.links.map((link) => linkItem(link, analysis)), open),
     expandableList(
@@ -99,6 +96,37 @@ function render(analysis: Analysis | undefined) {
     stopped.textContent = `Link lookups stopped: ${analysis.linkLookupsStopped}`;
     output.append(stopped);
   }
+}
+
+// TEMPORARY: wall-clock time of each step so far (see Times in lib/analysis.ts), one row per step; "-" = not done yet
+function timesSection({ times = {}, totalDurationMs }: Analysis): HTMLElement {
+  const steps: [string, number | undefined, string][] = [
+    ['total', times.total, 'since clicking Analyze'],
+    ['page', times.page, 'reading + parsing the live page'],
+    ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
+    ['snapshot download', times.snapshotDownload, "downloading the snapshot's HTML, incl. waiting for a rate-limit slot"],
+    ['differs', times.differs, 'running every differ on snapshot vs live (breakdown below)'],
+    ['link lookups', times.linkLookups, 'first L1 lookup started -> latest one finished, incl. the waits between them'],
+    // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
+    ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
+  ];
+  const section = document.createElement('div');
+  section.className = 'times';
+  const heading = document.createElement('h3');
+  heading.textContent = 'Time';
+  const table = document.createElement('table');
+  for (const [name, ms, description] of steps) {
+    const row = table.insertRow();
+    row.insertCell().textContent = name;
+    row.insertCell().textContent = ms === undefined ? '-' : seconds(ms);
+    row.insertCell().textContent = description;
+  }
+  section.append(heading, table);
+  return section;
+}
+
+function seconds(ms: number): string {
+  return `${(ms / 1000).toFixed(ms < 1000 ? 2 : 1)}s`;
 }
 
 // one link in the list: the URL, then its Wayback lookup status
@@ -149,21 +177,23 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
   }
 
   // differs that ran without errors
-  const ok = analysis.differMetrics.filter((r): r is Extract<DifferMetrics, { timeMs: number }> => !('error' in r));
+  const ok = analysis.differMetrics.filter((r): r is Extract<DifferMetrics, { timings: unknown }> => !('error' in r));
 
   // one row per differ
   const table = document.createElement('table');
-  table.innerHTML = '<tr><th>algorithm</th><th>time</th><th>diff size</th><th>similarity</th><th>label</th></tr>';
+  table.innerHTML = '<tr><th>algorithm</th><th>parse</th><th>diff</th><th>similarity time</th><th>diff size</th><th>similarity</th><th>label</th></tr>';
   for (const r of analysis.differMetrics) {
     const row = table.insertRow();
     row.insertCell().textContent = r.algorithm;
     if ('error' in r) { // differ threw: show the error across the rest of the row
       const cell = row.insertCell();
-      cell.colSpan = 4;
+      cell.colSpan = 6;
       cell.textContent = `error: ${r.error}`;
       continue;
     }
-    row.insertCell().textContent = `${r.timeMs.toFixed(1)} ms`;
+    for (const ms of [r.timings.parseMs, r.timings.diffMs, r.timings.similarityMs]) {
+      row.insertCell().textContent = `${ms.toFixed(1)} ms`;
+    }
     row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
     row.insertCell().textContent = `${(r.similarity * 100).toFixed(1)}%`;
     row.insertCell().textContent = r.label ?? '-'; // no classifier yet

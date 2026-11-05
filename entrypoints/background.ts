@@ -1,4 +1,4 @@
-import { analysisKey, type Analysis, type LinkLookup } from '@/lib/analysis';
+import { analysisKey, type Analysis, type LinkLookup, type Times } from '@/lib/analysis';
 import type { PageContent } from '@/lib/parse/extract';
 import { measureDiffers } from '@/lib/metrics';
 import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayback';
@@ -51,10 +51,17 @@ async function analyzeTab(tabId: number) {
   await browser.storage.session.remove(key);
   const isCurrent = () => currentRun.get(tabId) === runId;
 
+  // wall-clock time of each step (see Times); total and linkLookups are refreshed on every update
+  const start = performance.now();
+  let linksStart: number | undefined;
+  const times: Times = {};
+
   // accumulated results; each update merges in new fields and re-saves the whole thing
-  const analysis: Analysis = {};
+  const analysis: Analysis = { times };
   const update = async (changes: Partial<Analysis>) => {
     Object.assign(analysis, changes);
+    times.total = performance.now() - start;
+    if (linksStart !== undefined) times.linkLookups = performance.now() - linksStart;
     // only save if this run is still current (else outdated: tab navigated/closed, or Analyze re-clicked)
     if (isCurrent()) await browser.storage.session.set({ [key]: analysis });
   };
@@ -63,7 +70,9 @@ async function analyzeTab(tabId: number) {
   let liveHtml: string; // kept here only, not saved with the results (too big to re-save on every update)
   // try to get the page links from the content script
   try {
-    ({ html: liveHtml, ...livePage } = await browser.tabs.sendMessage(tabId, { type: 'analyze' }));
+    ({ html: liveHtml, ...livePage } = await timed<PageContent & { html: string }>(times, 'page', () =>
+      browser.tabs.sendMessage(tabId, { type: 'analyze' }),
+    ));
   } catch (err) {
     await update({ error: `Could not analyze page: ${err}` });
     return;
@@ -73,7 +82,7 @@ async function analyzeTab(tabId: number) {
   // try to find the latest Wayback snapshot for the page
   let snapshot: Snapshot | null = null;
   try {
-    snapshot = await findLatestSnapshot(livePage.url);
+    snapshot = await timed(times, 'snapshotLookup', () => findLatestSnapshot(livePage.url));
     await update({ snapshot });
   } catch (err) {
     await update({ snapshotError: `${err}` });
@@ -84,7 +93,8 @@ async function analyzeTab(tabId: number) {
   // TODO: complete for L1 links?
   if (snapshot) {
     try {
-      await update({ differMetrics: measureDiffers(await fetchSnapshotHtml(snapshot), liveHtml) });
+      const snapshotHtml = await timed(times, 'snapshotDownload', () => fetchSnapshotHtml(snapshot));
+      await update({ differMetrics: await timed(times, 'differs', async () => measureDiffers(snapshotHtml, liveHtml)) });
     } catch (err) {
       await update({ metricsError: `${err}` });
     }
@@ -92,6 +102,7 @@ async function analyzeTab(tabId: number) {
 
   // look up the latest snapshot of each L1 link
   const linksToLookUp = livePage.links.slice(0, MAX_LINKS);
+  linksStart = performance.now();
   await update({ linksToLookUp, linkLookups: {} });
 
   if (USE_CONCURRENT) {
@@ -101,6 +112,15 @@ async function analyzeTab(tabId: number) {
   }
 }
 
+// run `fn`, recording how long it took (wall-clock) in times[step], even if it throws
+async function timed<T>(times: Times, step: Exclude<keyof Times, 'total'>, fn: () => Promise<T>): Promise<T> {
+  const t = performance.now();
+  try {
+    return await fn();
+  } finally {
+    times[step] = performance.now() - t;
+  }
+}
 
 async function analyzeLinksSequential(
   linksToLookUp: string[],

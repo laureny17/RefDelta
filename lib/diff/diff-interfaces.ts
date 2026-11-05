@@ -35,7 +35,6 @@ export interface DiffResult {
     algorithm: string;
     diff:  {}
     stats: {
-      timeMs: number;
       sizeBytes: number;
     };
 }

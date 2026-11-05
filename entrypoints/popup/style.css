@@ -96,18 +96,25 @@ button:focus-visible {
   }
 }
 
-/* TEMPORARY: differ metrics section (see metricsSection in main.ts) */
+/* TEMPORARY: time + differ metrics sections (see timesSection, metricsSection in main.ts) */
+.times,
 .differ-metrics {
   text-align: left;
 }
+.times table,
 .differ-metrics table {
   border-collapse: collapse;
   font-size: 0.85em;
 }
+.times td,
 .differ-metrics th,
 .differ-metrics td {
   padding: 2px 8px;
   white-space: nowrap;
+}
+.times td:last-child {
+  white-space: normal; /* let the descriptions wrap */
+  opacity: 0.7;
 }
 .diff-preview {
   white-space: pre-wrap;

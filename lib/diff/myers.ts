@@ -49,10 +49,7 @@ export class MyersDiffer extends Differ<TextRep> {
     return {
       algorithm: this.name,
       diff,
-      stats: {
-        timeMs: 0, // filled in by Differ.compare()
-        sizeBytes: new TextEncoder().encode(JSON.stringify(diff)).length,
-      },
+      stats: { sizeBytes: new TextEncoder().encode(JSON.stringify(diff)).length },
     };
   }
 
