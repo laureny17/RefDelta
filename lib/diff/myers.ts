@@ -9,6 +9,7 @@ import { extract } from '../parse/extract';
 import { parseHtml } from '../parse/html';
 import type { DiffResult, TextRep } from './diff-interfaces';
 import { Differ } from './differ';
+import { MAX_RUNS, shortenRun, type PreviewRun } from './preview';
 
 export type Granularity = 'word' | 'block';
 
@@ -51,6 +52,13 @@ export class MyersDiffer extends Differ<TextRep> {
       diff,
       stats: { sizeBytes: new TextEncoder().encode(JSON.stringify(diff)).length },
     };
+  }
+
+  // the diff's runs, in order, with long ones shortened
+  override preview(diff: DiffResult): PreviewRun[] {
+    const { changes, granularity } = diff.diff as MyersDiff;
+    const sep = granularity === 'block' ? '\n' : ' ';
+    return changes.slice(0, MAX_RUNS).map(({ op, tokens }) => shortenRun({ op, text: tokens.join(sep) }));
   }
 
   private myers(oldRep: TextRep, newRep: TextRep): MyersDiff {

@@ -5,6 +5,7 @@ DiffResult
 
 import type {  Classification,
     Classifier} from "../classify/classify-interface";
+import type { PreviewRun } from "./preview";
 
 export interface CompareResult {
     diff: DiffResult;
@@ -33,6 +34,12 @@ export abstract class Differ<R extends Representation> {
     protected abstract computeSimilarity(oldRep: R, newRep: R, diff?: DiffResult): number;
 
     protected abstract computeDiff(oldRep: R, newRep: R): DiffResult;
+
+    // optional: a short, readable version of this algorithm's diff, for the popup (see preview.ts).
+    // not called by compare(); override it to show your algorithm's changes. default: nothing to show
+    preview(_diff: DiffResult): PreviewRun[] {
+        return [];
+    }
 
     compare(oldHtml: string, newHtml: string): CompareResult {
 
