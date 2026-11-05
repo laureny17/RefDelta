@@ -160,7 +160,7 @@ function linkDiffStatus(link: string, analysis: Analysis): string {
   if (!diff) return analysis.linkLookupsStopped ? 'not checked' : 'checking live page...';
   // couldn't fetch the live page (e.g. timeout) or the snapshot
   if ('error' in diff) return `check failed: ${diff.error}`;
-  // link rot: page gone, site unreachable, or redirects to a different site (see rotReason in lib/linkDiff.ts)
+  // link rot: page gone or site unreachable (see rotReason in lib/linkDiff.ts)
   if ('rot' in diff) return `LINK ROT: ${diff.rot}`;
   const redirect = diff.live.redirectedTo ? ` (live page redirected to ${diff.live.redirectedTo})` : '';
   // live page is fine but not diffed (e.g. no snapshot, a PDF, or blocked)

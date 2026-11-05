@@ -25,7 +25,7 @@ const BLOCKED_STATUSES = [401, 403, 429];
 export type LinkDiff =
   // both versions fetched + diffed
   | { live: LiveFetch; metrics: DifferMetrics[]; durationMs: number } // without previews (see diffLink)
-  // link rot: the live page is gone or redirects somewhere unrelated, so it isn't diffed
+  // link rot: the live page is gone or the site can't be reached, so it isn't diffed
   | { live?: LiveFetch; rot: string; durationMs: number } // no `live` if the site couldn't be reached at all
   // live page is fine but not diffed (e.g. no snapshot, not an HTML page, blocked)
   | { live: LiveFetch; skipped: string; durationMs: number }
@@ -35,7 +35,9 @@ export type LinkDiff =
 // what we got back when fetching the live page
 export interface LiveFetch {
   status: number; // HTTP status, e.g. 200, 404
-  redirectedTo?: string; // the URL we ended up at, if it redirected
+  // the URL we ended up at, if it redirected. redirects aren't counted as link rot (e.g. youtu.be -> youtube.com is fine)
+  // TODO: detect unrelated redirects (e.g. to a domain parking page); maybe redirected + very low similarity to the snapshot?
+  redirectedTo?: string;
 }
 
 // `snapshot`: the link's latest snapshot, or null if it has none (then it's only checked for link rot)
@@ -52,7 +54,7 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
     // raw HTML, before any JavaScript runs, same as the snapshot (unlike the main page, which we read after JS)
     const res = await fetch(link, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
     live = { status: res.status, ...(res.redirected && { redirectedTo: res.url }) };
-    const rot = rotReason(link, res);
+    const rot = rotReason(res);
     if (rot) return { live, rot, durationMs: durationMs() };
     if (!res.ok) return { live, skipped: `live page returned ${res.status} (probably blocking automated requests)`, durationMs: durationMs() };
     if (!snapshot) return { live, skipped: 'no snapshot to compare against', durationMs: durationMs() };
@@ -83,20 +85,9 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
 }
 
 // why the live page counts as link rot, if it does:
-//   - an error status (e.g. 404 not found, 410 gone, 500), except ones that don't tell us if the page is gone (see BLOCKED_STATUSES)
-//   - a redirect to a different site: meant to catch domain parking pages (the domain expired and was bought by
-//     someone else, so links to it now redirect to e.g. a "this domain is for sale" page); see TODO on isSameSite
-function rotReason(link: string, res: Response): string | undefined {
+//   an error status (e.g. 404 not found, 410 gone, 500), except ones that don't tell us if the page is gone (see BLOCKED_STATUSES)
+// (an unreachable site is also rot; see diffLink)
+function rotReason(res: Response): string | undefined {
   if (res.status >= 400 && !BLOCKED_STATUSES.includes(res.status)) return `live page returned ${res.status}`;
-  if (res.redirected && !isSameSite(new URL(link), new URL(res.url))) {
-    return `redirects to a different site (${new URL(res.url).hostname})`;
-  }
   return undefined;
-}
-
-// same site = same hostname, ignoring "www."
-// TODO: is "redirects to another domain" a good enough check for redirects
-function isSameSite(a: URL, b: URL): boolean {
-  const host = (u: URL) => u.hostname.replace(/^www\./, '');
-  return host(a) === host(b);
 }
