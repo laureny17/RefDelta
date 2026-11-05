@@ -7,8 +7,8 @@ import type {  Classification,
     Classifier} from "../classify/classify-interface";
 import type { PreviewRun } from "./preview";
 
-export interface CompareResult {
-    diff: DiffResult;
+export interface CompareResult<D = unknown> {
+    diff: DiffResult<D>;
     similarity: number; // from computeSimilarity: 1 = identical, 0 = nothing in common
     classification?: Classification; // undefined if this differ has no classifier
     timings: Timings;
@@ -21,7 +21,8 @@ export interface Timings {
     similarityMs: number; // computeSimilarity
 }
 
-export abstract class Differ<R extends Representation> {
+// R: what the algorithm compares (see diff-interfaces.ts); D: the shape of its diff
+export abstract class Differ<R extends Representation, D = unknown> {
     abstract readonly name: string;
 
     constructor(protected classifier?: Classifier) {}
@@ -31,17 +32,17 @@ export abstract class Differ<R extends Representation> {
     // `diff` is passed when compare() already computed one, so algorithms whose similarity comes from the diff
     // (e.g. Myers) can reuse it; algorithms with a cheaper way (e.g. shingling) can ignore it.
     // kept separate from computeDiff so we can later get just the similarity without a full diff
-    protected abstract computeSimilarity(oldRep: R, newRep: R, diff?: DiffResult): number;
+    protected abstract computeSimilarity(oldRep: R, newRep: R, diff?: DiffResult<D>): number;
 
-    protected abstract computeDiff(oldRep: R, newRep: R): DiffResult;
+    protected abstract computeDiff(oldRep: R, newRep: R): DiffResult<D>;
 
     // optional: a short, readable version of this algorithm's diff, for the popup (see preview.ts).
     // not called by compare(); override it to show your algorithm's changes. default: nothing to show
-    preview(_diff: DiffResult): PreviewRun[] {
+    preview(_diff: DiffResult<D>): PreviewRun[] {
         return [];
     }
 
-    compare(oldHtml: string, newHtml: string): CompareResult {
+    compare(oldHtml: string, newHtml: string): CompareResult<D> {
 
         const t0 = performance.now();
         const oldRep = this.parse(oldHtml);
