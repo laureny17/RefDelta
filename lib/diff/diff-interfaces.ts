@@ -29,11 +29,10 @@ export interface Edit {
     after?: string;
 }
 
-// TODO: some interface for diffs themselves
-
-export interface DiffResult {
+// `D` is the shape of the algorithm's own diff (e.g. MyersDiff); each algorithm defines its own
+export interface DiffResult<D = unknown> {
     algorithm: string;
-    diff:  {}
+    diff: D;
     stats: {
       sizeBytes: number;
     };

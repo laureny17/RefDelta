@@ -9,6 +9,7 @@ import { extract } from '../parse/extract';
 import { parseHtml } from '../parse/html';
 import type { DiffResult, TextRep } from './diff-interfaces';
 import { Differ } from './differ';
+import { MAX_RUNS, shortenRun, type PreviewRun } from './preview';
 
 export type Granularity = 'word' | 'block';
 
@@ -19,7 +20,7 @@ export interface MyersDiff {
   counts: { equal: number; insert: number; delete: number }; // counts per op
 }
 
-export class MyersDiffer extends Differ<TextRep> {
+export class MyersDiffer extends Differ<TextRep, MyersDiff> {
   readonly name: string;
 
   constructor(private granularity: Granularity = 'word') {
@@ -38,19 +39,26 @@ export class MyersDiffer extends Differ<TextRep> {
 
   // fraction of tokens the two versions share: 2 * equal / (old + new)
   // needs the diff's count of equal tokens: reuses `diff` if given, otherwise runs the diff
-  protected computeSimilarity(oldRep: TextRep, newRep: TextRep, diff?: DiffResult): number {
+  protected computeSimilarity(oldRep: TextRep, newRep: TextRep, diff?: DiffResult<MyersDiff>): number {
     const total = oldRep.tokens.length + newRep.tokens.length;
-    const { counts } = diff ? (diff.diff as MyersDiff) : this.myers(oldRep, newRep);
+    const { counts } = diff ? diff.diff : this.myers(oldRep, newRep);
     return total === 0 ? 1 : (2 * counts.equal) / total;
   }
 
-  protected computeDiff(oldRep: TextRep, newRep: TextRep): DiffResult {
+  protected computeDiff(oldRep: TextRep, newRep: TextRep): DiffResult<MyersDiff> {
     const diff = this.myers(oldRep, newRep);
     return {
       algorithm: this.name,
       diff,
       stats: { sizeBytes: new TextEncoder().encode(JSON.stringify(diff)).length },
     };
+  }
+
+  // the diff's runs, in order, with long ones shortened
+  override preview(diff: DiffResult<MyersDiff>): PreviewRun[] {
+    const { changes, granularity } = diff.diff;
+    const sep = granularity === 'block' ? '\n' : ' ';
+    return changes.slice(0, MAX_RUNS).map(({ op, tokens }) => shortenRun({ op, text: tokens.join(sep) }));
   }
 
   private myers(oldRep: TextRep, newRep: TextRep): MyersDiff {
