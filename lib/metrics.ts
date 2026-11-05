@@ -13,8 +13,8 @@ export type DifferMetrics =
       algorithm: string;
       timeMs: number; // parse + diff (Differ.compare() times them together)
       sizeBytes: number; // size of the diff as JSON
-      similarity?: number; // 0-1, if the algorithm reports one
-      label: string; // classifier output
+      similarity: number; // 0-1, from the differ's computeSimilarity
+      label?: string; // classifier output; undefined = no classifier yet
       preview: PreviewRun[]; // what changed, shortened for display
     }
   | { algorithm: string; error: string };
@@ -27,13 +27,13 @@ export interface PreviewRun {
 export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
   return DIFFERS.map((differ) => {
     try {
-      const { diff, classification } = differ.compare(snapshotHtml, liveHtml);
+      const { diff, similarity, classification } = differ.compare(snapshotHtml, liveHtml);
       return {
         algorithm: diff.algorithm,
         timeMs: diff.stats.timeMs,
         sizeBytes: diff.stats.sizeBytes,
-        similarity: classification.similarity ?? similarityOf(diff),
-        label: classification.label,
+        similarity,
+        label: classification?.label,
         preview: previewOf(diff),
       };
     } catch (err) {
@@ -46,10 +46,6 @@ export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMe
 
 function isMyers(diff: DiffResult): boolean {
   return diff.algorithm.startsWith('myers-');
-}
-
-function similarityOf(diff: DiffResult): number | undefined {
-  return isMyers(diff) ? (diff.diff as MyersDiff).similarity : undefined;
 }
 
 // limits so the preview stays small enough to store and show in the popup

@@ -8,7 +8,8 @@ import type {  Classification,
 
 export interface CompareResult {
     diff: DiffResult;
-    classification: Classification;
+    similarity: number; // from computeSimilarity: 1 = identical, 0 = nothing in common
+    classification?: Classification; // undefined if this differ has no classifier
 }
 
 export abstract class Differ<R extends Representation> {
@@ -33,10 +34,11 @@ export abstract class Differ<R extends Representation> {
 
         diff.stats.timeMs = performance.now() - start;
 
-        const classification = this.classifier
-        ? this.classifier.classify(diff)
-        : { label: "unchanged" as const, kinds: [] };
+        // not included in timeMs
+        const similarity = this.computeSimilarity(oldRep, newRep);
 
-        return { diff, classification };
+        const classification = this.classifier?.classify(diff);
+
+        return { diff, similarity, classification };
     }
 }

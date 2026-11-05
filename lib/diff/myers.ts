@@ -17,9 +17,6 @@ export interface MyersDiff {
   granularity: Granularity;
   changes: { op: 'equal' | 'insert' | 'delete'; tokens: string[] }[]; // in order
   counts: { equal: number; insert: number; delete: number }; // counts per op
-  // fraction of tokens the two versions share: 2 * equal / (old + new); 1 = identical, 0 = nothing in common
-  // (also included here because Differ.compare() doesn't call computeSimilarity)
-  similarity: number;
 }
 
 export class MyersDiffer extends Differ<TextRep> {
@@ -39,8 +36,11 @@ export class MyersDiffer extends Differ<TextRep> {
     return { kind: 'text', tokens };
   }
 
+  // fraction of tokens the two versions share: 2 * equal / (old + new)
+  // (Myers has no cheaper way to get this than running the diff again)
   protected computeSimilarity(oldRep: TextRep, newRep: TextRep): number {
-    return this.myers(oldRep, newRep).similarity;
+    const total = oldRep.tokens.length + newRep.tokens.length;
+    return total === 0 ? 1 : (2 * this.myers(oldRep, newRep).counts.equal) / total;
   }
 
   protected computeDiff(oldRep: TextRep, newRep: TextRep): DiffResult {
@@ -62,8 +62,6 @@ export class MyersDiffer extends Differ<TextRep> {
       counts[op] += c.value.length;
       return { op, tokens: c.value } as const;
     });
-    const total = oldRep.tokens.length + newRep.tokens.length;
-    const similarity = total === 0 ? 1 : (2 * counts.equal) / total;
-    return { granularity: this.granularity, changes, counts, similarity };
+    return { granularity: this.granularity, changes, counts };
   }
 }

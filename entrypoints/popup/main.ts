@@ -165,8 +165,8 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
     }
     row.insertCell().textContent = `${r.timeMs.toFixed(1)} ms`;
     row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
-    row.insertCell().textContent = r.similarity === undefined ? '-' : `${(r.similarity * 100).toFixed(1)}%`;
-    row.insertCell().textContent = r.label;
+    row.insertCell().textContent = `${(r.similarity * 100).toFixed(1)}%`;
+    row.insertCell().textContent = r.label ?? '-'; // no classifier yet
   }
   section.append(table);
 
