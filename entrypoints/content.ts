@@ -13,7 +13,8 @@ export default defineContentScript({
         //       both sides are read the same way, and set aside JS-added content somewhere else?
         const content = extract(document, location.href);
         console.log('[RefDelta]', content); // full parse output (blocks, text, links, ...) for debugging
-        sendResponse(content);
+        // + the page's HTML, for diffing against its snapshot (not stored; see background.ts)
+        sendResponse({ ...content, html: document.documentElement.outerHTML });
       }
     });
   },

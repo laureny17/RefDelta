@@ -14,6 +14,15 @@ export interface Snapshot {
 // TODO: how to handle non-200 archive captures?
 //  - fall back to the latest 200 for content comparison (filter=statuscode:200)?
 //  - flag 404s?
+// the raw archived HTML of a snapshot: the "id_" flag returns the page as originally captured,
+// without the Wayback toolbar or Wayback's rewritten links
+export async function fetchSnapshotHtml(snapshot: Snapshot): Promise<string> {
+  const rawUrl = snapshot.snapshotUrl.replace(`/web/${snapshot.timestamp}/`, `/web/${snapshot.timestamp}id_/`);
+  const res = await waybackFetch(rawUrl); // paced + pauses on 429, like CDX lookups
+  if (!res.ok) throw new Error(`snapshot fetch failed: ${res.status}`);
+  return res.text();
+}
+
 export async function findLatestSnapshot(url: string): Promise<Snapshot | null> {
   const query = new URL('https://web.archive.org/cdx/search/cdx');
   query.searchParams.set('url', url);

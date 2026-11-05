@@ -1,6 +1,7 @@
 import { analysisKey, type Analysis, type LinkLookup } from '@/lib/analysis';
 import type { PageContent } from '@/lib/parse/extract';
-import { findLatestSnapshot, type Snapshot } from '@/lib/wayback';
+import { measureDiffers } from '@/lib/metrics';
+import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, pauseForRateLimit, throwIfPaused, waitForSlot } from '@/lib/waybackQueue';
 
 // max number of L1 links to look up per page (pretty arbitrarily chosen for now)
@@ -59,9 +60,10 @@ async function analyzeTab(tabId: number) {
   };
 
   let livePage: PageContent;
+  let liveHtml: string; // kept here only, not saved with the results (too big to re-save on every update)
   // try to get the page links from the content script
   try {
-    livePage = await browser.tabs.sendMessage(tabId, { type: 'analyze' });
+    ({ html: liveHtml, ...livePage } = await browser.tabs.sendMessage(tabId, { type: 'analyze' }));
   } catch (err) {
     await update({ error: `Could not analyze page: ${err}` });
     return;
@@ -69,10 +71,23 @@ async function analyzeTab(tabId: number) {
   await update({ livePage }); // links ready; snapshot still pending
 
   // try to find the latest Wayback snapshot for the page
+  let snapshot: Snapshot | null = null;
   try {
-    await update({ snapshot: await findLatestSnapshot(livePage.url) });
+    snapshot = await findLatestSnapshot(livePage.url);
+    await update({ snapshot });
   } catch (err) {
     await update({ snapshotError: `${err}` });
+  }
+
+  // diff the snapshot against the live page with every differ. the CDX lookup above only gives us the
+  // snapshot's link; following it to get the HTML is 1 more Wayback request (through the same queue)
+  // TODO: complete for L1 links?
+  if (snapshot) {
+    try {
+      await update({ differMetrics: measureDiffers(await fetchSnapshotHtml(snapshot), liveHtml) });
+    } catch (err) {
+      await update({ metricsError: `${err}` });
+    }
   }
 
   // look up the latest snapshot of each L1 link

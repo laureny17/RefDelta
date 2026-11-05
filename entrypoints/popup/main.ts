@@ -1,6 +1,7 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
 import type { Image } from '@/lib/parse/extract';
+import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
 
 // TODO: change extension to show results as overlay rather than through extension popup
@@ -63,6 +64,7 @@ function render(analysis: Analysis | undefined) {
   output.replaceChildren(
     title,
     snapshotLine(analysis),
+    metricsSection(analysis, open), // stats from running each differ on the snapshot vs the live page
     expandableList('links', linksLabel, livePage.links.map((link) => linkItem(link, analysis)), open),
     expandableList(
       'malformed',
@@ -122,6 +124,74 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
 // one image in the list: its URL, then its alt text (if any)
 function imageItem({ src, alt }: Image): (string | Node)[] {
   return alt ? [plainLink(src), ` — "${alt}"`] : [plainLink(src)];
+}
+
+// TEMPORARY: differ metrics (each differ run on snapshot vs live page): a table of stats, then a collapsible preview of each algorithm's diff
+function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'differ-metrics';
+  const heading = document.createElement('h3');
+  heading.textContent = 'Differ metrics: snapshot vs live page';
+  section.append(heading);
+
+  // nothing to show yet (or ever, if there's no snapshot)
+  if (!analysis.snapshot) {
+    section.append(analysis.snapshot === null || analysis.snapshotError ? 'No snapshot to compare against' : 'Waiting for snapshot...');
+    return section;
+  }
+  if (analysis.metricsError) {
+    section.append(`Differ metrics failed: ${analysis.metricsError}`);
+    return section;
+  }
+  if (!analysis.differMetrics) {
+    section.append('Fetching snapshot + diffing...');
+    return section;
+  }
+
+  // differs that ran without errors
+  const ok = analysis.differMetrics.filter((r): r is Extract<DifferMetrics, { timeMs: number }> => !('error' in r));
+
+  // one row per differ
+  const table = document.createElement('table');
+  table.innerHTML = '<tr><th>algorithm</th><th>time</th><th>diff size</th><th>similarity</th><th>label</th></tr>';
+  for (const r of analysis.differMetrics) {
+    const row = table.insertRow();
+    row.insertCell().textContent = r.algorithm;
+    if ('error' in r) { // differ threw: show the error across the rest of the row
+      const cell = row.insertCell();
+      cell.colSpan = 4;
+      cell.textContent = `error: ${r.error}`;
+      continue;
+    }
+    row.insertCell().textContent = `${r.timeMs.toFixed(1)} ms`;
+    row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
+    row.insertCell().textContent = r.similarity === undefined ? '-' : `${(r.similarity * 100).toFixed(1)}%`;
+    row.insertCell().textContent = r.label;
+  }
+  section.append(table);
+
+  // one collapsible diff preview per differ: inserted text green, deleted red, unchanged dimmed (see style.css)
+  for (const r of ok) {
+    const key = `preview-${r.algorithm}`; // keeps it expanded across re-renders, like expandableList
+    const changed = r.preview.filter((p) => p.op !== 'equal').length;
+    const details = document.createElement('details');
+    details.dataset.key = key;
+    details.open = open.has(key);
+    const summary = document.createElement('summary');
+    summary.textContent = `${r.algorithm}: ${changed} changed runs`;
+    const body = document.createElement('div');
+    body.className = 'diff-preview';
+    // each run of equal/inserted/deleted tokens becomes a span styled by its op
+    for (const { op, text } of r.preview) {
+      const span = document.createElement('span');
+      span.className = op;
+      span.textContent = text + ' ';
+      body.append(span);
+    }
+    details.append(summary, body);
+    section.append(details);
+  }
+  return section;
 }
 
 // a link that opens in a new tab, showing its URL
