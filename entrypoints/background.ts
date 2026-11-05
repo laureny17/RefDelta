@@ -151,18 +151,19 @@ async function analyzeLinksSequential(
     const totalDurationMs = Object.values(updatedLookups).reduce((sum, r) => sum + r.durationMs, 0);
     await update({ linkLookups: updatedLookups, totalDurationMs });
 
-    if ('snapshot' in result && result.snapshot) {
+    // check every looked-up link for link rot (and diff it if it has a snapshot)
+    if ('snapshot' in result) {
       const rateLimited = await diffAndSave(link, result.snapshot, analysis, update, isCurrent);
       if (rateLimited) return;
     }
   }
 }
 
-// diff one L1 link that has a snapshot and save the result; returns true if Wayback rate-limited us
+// check (+ diff, if it has a snapshot) one L1 link and save the result; returns true if Wayback rate-limited us
 // (then the caller should stop, like after a rate-limited lookup)
 async function diffAndSave(
   link: string,
-  snapshot: Snapshot,
+  snapshot: Snapshot | null,
   analysis: Analysis,
   update: (changes: Partial<Analysis>) => Promise<void>,
   isCurrent: () => boolean,
@@ -213,8 +214,9 @@ async function analyzeLinksConcurrent(
     const totalDurationMs = Object.values(updatedLookups).reduce((sum, r) => sum + r.durationMs, 0);
     await update({ linkLookups: updatedLookups, totalDurationMs });
 
-    // snapshot fetch goes through the Wayback queue, so it shares slots with the remaining lookups
-    if ('snapshot' in result && result.snapshot) {
+    // check every looked-up link for link rot (and diff it if it has a snapshot); the snapshot fetch goes
+    // through the Wayback queue, so it shares slots with the remaining lookups
+    if ('snapshot' in result) {
       if (await diffAndSave(link, result.snapshot, analysis, update, isCurrent)) rateLimitHit = true;
     }
   };

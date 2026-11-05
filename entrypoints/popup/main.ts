@@ -142,7 +142,7 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
   } else if ('error' in lookup) {
     status = [`lookup failed: ${lookup.error} (${lookup.durationMs.toFixed(0)}ms)`];
   } else if (!lookup.snapshot) {
-    status = [`no snapshot (${lookup.durationMs.toFixed(0)}ms)`];
+    status = [`no snapshot (${lookup.durationMs.toFixed(0)}ms) — `, linkDiffStatus(link, analysis)];
   } else {
     status = [
       snapshotLink(lookup.snapshot),
@@ -157,13 +157,15 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
 function linkDiffStatus(link: string, analysis: Analysis): string {
   const diff = analysis.linkDiffs?.[link];
   // no result yet: still running, or never will be if lookups stopped (e.g. rate limit)
-  if (!diff) return analysis.linkLookupsStopped ? 'not diffed' : 'diffing...';
-  // couldn't fetch the live page or the snapshot
-  if ('error' in diff) return `diff failed: ${diff.error}`;
+  if (!diff) return analysis.linkLookupsStopped ? 'not checked' : 'checking live page...';
+  // couldn't fetch the live page (e.g. timeout) or the snapshot
+  if ('error' in diff) return `check failed: ${diff.error}`;
+  // link rot: page gone, site unreachable, or redirects to a different site (see rotReason in lib/linkDiff.ts)
+  if ('rot' in diff) return `LINK ROT: ${diff.rot}`;
   const redirect = diff.live.redirectedTo ? ` (live page redirected to ${diff.live.redirectedTo})` : '';
-  // live page fetched but not worth diffing (e.g. a 404, or a PDF)
+  // live page is fine but not diffed (e.g. no snapshot, a PDF, or blocked)
   if ('skipped' in diff) return `not diffed: ${diff.skipped}${redirect}`;
-  // diffed: one "<algorithm> <similarity> (label)" per differ, e.g. "myers-word 20% (minor)" and "myers-block 70% (major)"
+  // diffed: one "<algorithm> <similarity> (label)" per differ, e.g. "myers-word 64% (major)" and "myers-block 95% (minor)"
   const results = diff.metrics.map((m) =>
     'error' in m
       ? `${m.algorithm} failed`
