@@ -1,5 +1,6 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
+import type { LinkDiff } from '@/lib/linkDiff';
 import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
@@ -99,8 +100,9 @@ function render(analysis: Analysis | undefined) {
 }
 
 // TEMPORARY: wall-clock time of each step so far (see Times in lib/analysis.ts), one row per step; "-" = not done yet
-function timesSection({ times = {}, totalDurationMs }: Analysis): HTMLElement {
-  const steps: [string, number | undefined, string][] = [
+function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis): HTMLElement {
+  const linkComputeMs = Object.values(linkDiffs).reduce((sum, d) => sum + computeMs(d), 0);
+  const steps: [string, number | undefined, string, ((ms: number) => string)?][] = [
     ['total', times.total, 'since clicking Analyze'],
     ['page', times.page, 'reading + parsing the live page'],
     ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
@@ -109,16 +111,18 @@ function timesSection({ times = {}, totalDurationMs }: Analysis): HTMLElement {
     ['link lookups + diffs', times.linkLookups, 'first L1 lookup started -> latest lookup/diff finished, incl. the waits between them'],
     // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
     ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
+    // leaves out network time (which varies run to run), so it's the number to compare L1_STRATEGY 'full' vs 'similarity' with
+    ['L1 diff computing', linkComputeMs, 'parse + diff + similarity for every L1 link and algorithm, added up', millis],
   ];
   const section = document.createElement('div');
   section.className = 'times';
   const heading = document.createElement('h3');
   heading.textContent = 'Time';
   const table = document.createElement('table');
-  for (const [name, ms, description] of steps) {
+  for (const [name, ms, description, format = seconds] of steps) {
     const row = table.insertRow();
     row.insertCell().textContent = name;
-    row.insertCell().textContent = ms === undefined ? '-' : seconds(ms);
+    row.insertCell().textContent = ms === undefined ? '-' : format(ms);
     row.insertCell().textContent = description;
   }
   section.append(heading, table);
@@ -127,6 +131,20 @@ function timesSection({ times = {}, totalDurationMs }: Analysis): HTMLElement {
 
 function seconds(ms: number): string {
   return `${(ms / 1000).toFixed(ms < 1000 ? 2 : 1)}s`;
+}
+
+function millis(ms: number): string {
+  return `${ms.toFixed(1)} ms`;
+}
+
+// time spent computing for one link (parse + diff + similarity, all algorithms), without network time
+function computeMs(diff: LinkDiff): number {
+  if (!('metrics' in diff)) return 0;
+  return diff.metrics.reduce((sum, m) => {
+    if ('error' in m) return sum;
+    const { parseMs, similarityMs } = m.timings;
+    return sum + parseMs + similarityMs + ('diffMs' in m.timings ? m.timings.diffMs : 0); // no diffMs in 'similarity' mode
+  }, 0);
 }
 
 // one link in the list: the URL, then its Wayback lookup status
@@ -171,7 +189,8 @@ function linkDiffStatus(link: string, analysis: Analysis): string {
       ? `${m.algorithm} failed`
       : `${m.algorithm} ${(m.similarity * 100).toFixed(1)}%${m.label ? ` (${m.label})` : ''}`,
   );
-  return `${results.join(' · ')}${redirect} (${(diff.durationMs / 1000).toFixed(1)}s)`;
+  // (total time incl. network, time spent computing only)
+  return `${results.join(' · ')}${redirect} (${seconds(diff.durationMs)} total, ${millis(computeMs(diff))} computing)`;
 }
 
 // one image in the list: its URL, then its alt text (if any)
