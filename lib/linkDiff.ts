@@ -2,15 +2,19 @@
 // if it's fine and has a snapshot, fetches the snapshot's HTML (from Wayback) and
 // runs every differ on them, like we do for the main page.
 
-// performs full diff for every link upfront.
-// TODO: add the alternative option: only Differ.similarity() here, and compute the full diff when the user opens the link
+// two strategies, picked with L1_STRATEGY:
+//   'full': full diff for every link up front (Differ.compare())
+//   'similarity': only a similarity score per link (Differ.similarity()); to get the full diff, open the link and click Analyze
 
 // only the L1 page's own content is diffed; its links (L2) aren't followed; we stop
 // after one level: when the user opens an L1 page, it becomes the new L0 and gets analyzed from there
 
-import { measureDiffers, type DifferMetrics } from './metrics';
+import { measureDiffers, measureSimilarity, type DifferMetrics, type SimilarityMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
 import { WaybackRateLimitedError } from './waybackQueue';
+
+// the strategy to use for diffing L1 links
+export const L1_STRATEGY: 'full' | 'similarity' = 'full';
 
 // give up on a live page after this long (same as Wayback requests)
 const LIVE_TIMEOUT_MS = 30 * 1000;
@@ -24,7 +28,8 @@ const BLOCKED_STATUSES = [401, 403, 429];
 
 export type LinkDiff =
   // both versions fetched + diffed
-  | { live: LiveFetch; metrics: DifferMetrics[]; durationMs: number } // without previews (see diffLink)
+  // (in 'similarity' mode, `metrics` has no diff info, just similarities)
+  | { live: LiveFetch; metrics: (DifferMetrics | SimilarityMetrics)[]; durationMs: number } // without previews (see diffLink)
   // link rot: the live page is gone or the site can't be reached, so it isn't diffed
   | { live?: LiveFetch; rot: string; durationMs: number } // no `live` if the site couldn't be reached at all
   // live page is fine but not diffed (e.g. no snapshot, not an HTML page, blocked)
@@ -80,7 +85,9 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
   }
 
   // no previews: we diff up to MAX_LINKS links, and all results are re-saved on every update
-  const metrics = measureDiffers(snapshotHtml, liveHtml, { preview: false });
+  const metrics = L1_STRATEGY === 'full'
+    ? measureDiffers(snapshotHtml, liveHtml, { preview: false }) // compute full diff
+    : measureSimilarity(snapshotHtml, liveHtml); // only compute similarity score
   return { live, metrics, durationMs: durationMs() };
 }
 
