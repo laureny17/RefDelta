@@ -124,6 +124,5 @@ So we can build concurrently:
 ## TODOs
 
 - **Classifier:** labels unchanged / minor / major from the similarity; thresholds to be set by experiments; not built yet
--
-- **L1 links:** not diffed yet. When they are, we could try both strategies: `compare()` (full diff) for every link vs. `similarity()` during the crawl + `compare()` when the user opens a link
+- **L1 links:** right now, every L1 link with a snapshot gets a full diff from every algorithm during Analyze (`lib/linkDiff.ts`). The other option, still to try: only compute a quick similarity score per link during Analyze, and the full diff only when the user opens that link; then compare the two (speed, storage)
 - **Measuring accuracy:** Might want to have some way of scoring/benchmarking(?) the algorithms somehow, if we're looking to have some sort of quantitative comparison.

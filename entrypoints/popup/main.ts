@@ -106,7 +106,7 @@ function timesSection({ times = {}, totalDurationMs }: Analysis): HTMLElement {
     ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
     ['snapshot download', times.snapshotDownload, "downloading the snapshot's HTML, incl. waiting for a rate-limit slot"],
     ['differs', times.differs, 'running every differ on snapshot vs live (breakdown below)'],
-    ['link lookups', times.linkLookups, 'first L1 lookup started -> latest one finished, incl. the waits between them'],
+    ['link lookups + diffs', times.linkLookups, 'first L1 lookup started -> latest lookup/diff finished, incl. the waits between them'],
     // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
     ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
   ];
@@ -144,9 +144,32 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
   } else if (!lookup.snapshot) {
     status = [`no snapshot (${lookup.durationMs.toFixed(0)}ms)`];
   } else {
-    status = [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms)`];
+    status = [
+      snapshotLink(lookup.snapshot),
+      ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms) — `,
+      linkDiffStatus(link, analysis),
+    ];
   }
   return [a, ' — ', ...status];
+}
+
+// for a link with a snapshot: each differ's similarity (snapshot vs live), or why it wasn't diffed
+function linkDiffStatus(link: string, analysis: Analysis): string {
+  const diff = analysis.linkDiffs?.[link];
+  // no result yet: still running, or never will be if lookups stopped (e.g. rate limit)
+  if (!diff) return analysis.linkLookupsStopped ? 'not diffed' : 'diffing...';
+  // couldn't fetch the live page or the snapshot
+  if ('error' in diff) return `diff failed: ${diff.error}`;
+  const redirect = diff.live.redirectedTo ? ` (live page redirected to ${diff.live.redirectedTo})` : '';
+  // live page fetched but not worth diffing (e.g. a 404, or a PDF)
+  if ('skipped' in diff) return `not diffed: ${diff.skipped}${redirect}`;
+  // diffed: one "<algorithm> <similarity> (label)" per differ, e.g. "myers-word 20% (minor)" and "myers-block 70% (major)"
+  const results = diff.metrics.map((m) =>
+    'error' in m
+      ? `${m.algorithm} failed`
+      : `${m.algorithm} ${(m.similarity * 100).toFixed(1)}%${m.label ? ` (${m.label})` : ''}`,
+  );
+  return `${results.join(' · ')}${redirect} (${(diff.durationMs / 1000).toFixed(1)}s)`;
 }
 
 // one image in the list: its URL, then its alt text (if any)
@@ -203,7 +226,8 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
   // one collapsible diff preview per differ: inserted text green, deleted red, unchanged dimmed (see style.css)
   for (const r of ok) {
     const key = `preview-${r.algorithm}`; // keeps it expanded across re-renders, like expandableList
-    const changed = r.preview.filter((p) => p.op !== 'equal').length;
+    const preview = r.preview ?? [];
+    const changed = preview.filter((p) => p.op !== 'equal').length;
     const details = document.createElement('details');
     details.dataset.key = key;
     details.open = open.has(key);
@@ -212,7 +236,7 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
     const body = document.createElement('div');
     body.className = 'diff-preview';
     // each run of equal/inserted/deleted tokens becomes a span styled by its op
-    for (const { op, text } of r.preview) {
+    for (const { op, text } of preview) {
       const span = document.createElement('span');
       span.className = op;
       span.textContent = text + ' ';

@@ -1,3 +1,4 @@
+import type { LinkDiff } from './linkDiff';
 import type { DifferMetrics } from './metrics';
 import type { PageContent } from './parse/extract';
 import type { Snapshot } from './wayback';
@@ -14,6 +15,7 @@ export interface Analysis {
   linksToLookUp?: string[]; // the L1 links we'll look up snapshots for (capped; see MAX_LINKS)
   linkLookups?: Record<string, LinkLookup>; // keyed by link URL; missing = not looked up yet
   linkLookupsStopped?: string; // why link lookups stopped early (e.g. Wayback rate limit)
+  linkDiffs?: Record<string, LinkDiff>; // keyed by link URL, for links with a snapshot; missing = not diffed (yet)
   totalDurationMs?: number; // sum of each link lookup's own time (lookups overlap, so this isn't time waited)
   times?: Times;
 }
@@ -25,7 +27,7 @@ export interface Times {
   snapshotLookup?: number; // CDX lookup for this page
   snapshotDownload?: number; // fetching the snapshot's HTML (incl. waiting for a rate-limit slot)
   differs?: number; // running every differ (see differMetrics for each one's breakdown)
-  linkLookups?: number; // first L1 lookup started -> latest one finished (incl. waiting for slots); updates as it runs
+  linkLookups?: number; // first L1 lookup started -> latest lookup/diff finished (incl. waiting for slots); updates as it runs
 }
 
 // result of looking up one L1 link's latest snapshot
