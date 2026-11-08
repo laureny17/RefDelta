@@ -54,7 +54,7 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
   let live: LiveFetch;
   let liveHtml: string;
   try {
-    // NOT through the Wayback queue: this goes to the link's own site, so Wayback's rate limit doesn't apply
+    // NOT through waybackFetch: this goes to the link's own site, so Wayback's rate limit doesn't apply
     // (needs host_permissions for all sites; see wxt.config.ts)
     // raw HTML, before any JavaScript runs, same as the snapshot (unlike the main page, which we read after JS)
     const res = await fetch(link, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
@@ -78,7 +78,7 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
 
   let snapshotHtml: string;
   try {
-    snapshotHtml = await fetchSnapshotHtml(snapshot); // 1 more Wayback request, through the rate-limited queue
+    snapshotHtml = await fetchSnapshotHtml(snapshot); // 1 more Wayback request, rate-limited by waybackFetch
   } catch (err) {
     if (err instanceof WaybackRateLimitedError) throw err;
     return { error: `snapshot: ${err}`, durationMs: durationMs() };
