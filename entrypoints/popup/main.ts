@@ -276,8 +276,15 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
 
   // one collapsible diff preview per differ: inserted text green, deleted red, unchanged dimmed (see style.css)
   for (const r of ok) {
+    const { preview } = r;
+    // nothing to expand (e.g. the differ has no preview()); "0 changed runs" would wrongly suggest nothing changed
+    if (!preview.length) {
+      const note = document.createElement('p');
+      note.textContent = `${r.algorithm}: no preview`;
+      section.append(note);
+      continue;
+    }
     const key = `preview-${r.algorithm}`; // keeps it expanded across re-renders, like expandableList
-    const preview = r.preview ?? [];
     const changed = preview.filter((p) => p.op !== 'equal').length;
     const details = document.createElement('details');
     details.dataset.key = key;
