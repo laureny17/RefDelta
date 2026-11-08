@@ -11,7 +11,7 @@
 
 import { measureDiffers, measureSimilarity, type DifferMetrics, type SimilarityMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
-import { WaybackRateLimitedError } from './waybackQueue';
+import { WaybackRateLimitedError } from './waybackRateLimit';
 
 // the strategy to use for diffing L1 links
 export const L1_STRATEGY: 'full' | 'similarity' = 'full';

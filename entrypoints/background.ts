@@ -3,10 +3,10 @@ import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { measureDiffers } from '@/lib/metrics';
 import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayback';
-import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackQueue';
+import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
 // max number of L1 links to look up per page (pretty arbitrarily chosen for now)
-// note that all Wayback requests are limited to 24/min (see waybackQueue.ts)
+// note that all Wayback requests are limited to 24/min (see waybackRateLimit.ts)
 // TODO: which links should we analyze? should there be a "smart" way to determine which ones to look into, if we're being selective?
 //       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
 const MAX_LINKS = 50;
@@ -136,7 +136,7 @@ async function diffAndSave(
 
 // look up + check every L1 link, starting one lookup per rate-limit slot without waiting for earlier ones to
 // finish, so several can be in flight at once. every Wayback request (lookups + snapshot downloads, this run's
-// and other tabs') goes through waybackFetch, which keeps sends at least 2.5s apart (24/min; see waybackQueue.ts)
+// and other tabs') goes through waybackFetch, which keeps sends at least 2.5s apart (24/min; see waybackRateLimit.ts)
 async function analyzeLinks(
   linksToLookUp: string[],
   analysis: Analysis,
