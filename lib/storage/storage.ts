@@ -1,12 +1,9 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import type { ChangeLabel } from "../classify/classify-interface";
 
 
-export enum ChangeType {
-  ROTTED = "ROTTED",
-  NO_CHANGE = "NO_CHANGE",
-  SMALL = "SMALL",
-  LARGE = "LARGE",
-}
+// the classifier's label, or "rotted" if the link is dead (decided before any diff runs, so it isn't a classifier label)
+export type ChangeType = ChangeLabel | "rotted";
 
 export interface CrawlRecord {
   id?: number;               

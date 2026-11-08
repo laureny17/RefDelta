@@ -24,7 +24,7 @@ live HTML ─────┘                         └─ computeSimilarity �
 | `computeSimilarity(old, new, diff?)` | required  | how similar the two versions are: 1 = identical, 0 = nothing in common. It also receives the diff `compare()` just computed: use it if your similarity comes from the diff (Myers does), or ignore it if your algorithm computes similarity another way (e.g. shingling). `diff` may be undefined (see `similarity()` below), so this must also work without it |
 | `preview(diff)`                      | optional  | a short, readable version of your diff for the popup (see `preview.ts`). Without it, the popup just shows no preview                                                                                                                                                     |
 
-`compare()` also returns a classification (unchanged / minor / major) from the similarity, if the differ has a `Classifier` (`lib/classify/classify-interface.ts`); none exists yet as of 11/04
+`compare()` and `similarity()` also return a classification (unchanged / minor / major) from the similarity. Every differ gets the general `ThresholdClassifier` (`lib/classify/threshold.ts`) by default, so there's nothing to write for it. The same score can mean different things for different algorithms, so once there's data, an algorithm can pass its own thresholds to the `Differ` constructor
 
 `Differ.similarity(oldHtml, newHtml)` gets **just the similarity**, without a diff: it runs only `parse` + `computeSimilarity` (with no `diff` passed in). It's used for **every L1 link**: each link only needs a similarity score (to see a link's full diff, the user opens the link and clicks Analyze). Whether that's cheaper than a full diff depends on your algorithm: Myers needs the diff to get its similarity, so its `computeSimilarity` runs the diff itself; shingling doesn't. No need to write anything extra for it, as long as your `computeSimilarity` works without a diff.
 
@@ -124,6 +124,6 @@ So we can build concurrently:
 
 ## TODOs
 
-- **Classifier:** labels unchanged / minor / major from the similarity; thresholds to be set by experiments; not built yet
+- **Classifier thresholds:** the current values in `lib/classify/threshold.ts` are placeholders, not based on any data; to be set by experiments, possibly per algorithm
 - **Strategy costs:** a popup table with each strategy's total compute time (L0 + all its L1 links), to compare strategies as a whole
 - **Measuring accuracy:** Might want to have some way of scoring/benchmarking(?) the algorithms somehow, if we're looking to have some sort of quantitative comparison.

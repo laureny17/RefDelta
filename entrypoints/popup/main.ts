@@ -217,7 +217,7 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
   const results = diff.metrics.map((m) =>
     'error' in m
       ? `${m.algorithm} failed`
-      : `${m.algorithm} ${(m.similarity * 100).toFixed(1)}%${m.label ? ` (${m.label})` : ''}`,
+      : `${m.algorithm} ${(m.similarity * 100).toFixed(1)}% (${m.label})`,
   );
   // (total time incl. network, time spent computing only)
   return withFound('diffed', `${results.join(' · ')}${redirect} (${duration(diff.durationMs)} total, ${duration(computeMs(diff))} computing)`);
@@ -255,7 +255,7 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
 
   // one row per differ
   const table = document.createElement('table');
-  table.innerHTML = '<tr><th>algorithm</th><th>parse</th><th>diff</th><th>similarity time</th><th>diff size</th><th>similarity</th><th>label</th></tr>';
+  table.innerHTML = '<tr><th>algorithm</th><th>parse</th><th>diff</th><th>similarity time</th><th>diff size</th><th>similarity</th><th>label (placeholder thresholds)</th></tr>';
   for (const r of analysis.differMetrics) {
     const row = table.insertRow();
     row.insertCell().textContent = r.algorithm;
@@ -270,7 +270,7 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
     }
     row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
     row.insertCell().textContent = `${(r.similarity * 100).toFixed(1)}%`;
-    row.insertCell().textContent = r.label ?? '-'; // no classifier yet
+    row.insertCell().textContent = r.label;
   }
   section.append(table);
 

@@ -5,6 +5,7 @@
 // compares a flat sequence of tokens: either words, or blocks (paragraphs/headings/list items; see lib/parse/)
 
 import { diffArrays } from 'diff';
+import { ThresholdClassifier } from '../classify/threshold';
 import { htmlToBlocks } from '../parse/html';
 import type { DiffResult, TextRep } from './diff-interfaces';
 import { Differ } from './differ';
@@ -23,7 +24,9 @@ export class MyersDiffer extends Differ<TextRep, MyersDiff> {
   readonly name: string;
 
   constructor(private granularity: Granularity = 'word') {
-    super();
+    // this algorithm's own thresholds (without this, `super()` gets the defaults in lib/classify/threshold.ts)
+    // TODO: PLACEHOLDER values (same as the defaults for now); to be set by experiments, maybe per granularity
+    super(new ThresholdClassifier({ unchanged: 0.99, minor: 0.8 }));
     this.name = `myers-${granularity}`;
   }
 
