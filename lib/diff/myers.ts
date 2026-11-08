@@ -5,8 +5,7 @@
 // compares a flat sequence of tokens: either words, or blocks (paragraphs/headings/list items; see lib/parse/)
 
 import { diffArrays } from 'diff';
-import { extract } from '../parse/extract';
-import { parseHtml } from '../parse/html';
+import { htmlToBlocks } from '../parse/html';
 import type { DiffResult, TextRep } from './diff-interfaces';
 import { Differ } from './differ';
 import { MAX_RUNS, shortenRun, type PreviewRun } from './preview';
@@ -30,9 +29,7 @@ export class MyersDiffer extends Differ<TextRep, MyersDiff> {
 
   // works anywhere, incl. the background script and Node (see lib/parse/html.ts)
   protected parse(html: string): TextRep {
-    const doc = parseHtml(html);
-    // the URL only matters for resolving links, which the text diff doesn't use
-    const { blocks } = extract(doc, 'about:blank');
+    const blocks = htmlToBlocks(html);
     const tokens = this.granularity === 'block' ? blocks : blocks.flatMap((b) => b.split(' '));
     return { kind: 'text', tokens };
   }

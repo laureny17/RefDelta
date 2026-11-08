@@ -38,8 +38,7 @@ live HTML ─────┘                         └─ computeSimilarity �
 For text, start from the shared parser like `MyersDiffer.parse()` does:
 
 ```ts
-const doc = parseHtml(html);                       // works in the background script + Node (lib/parse/html.ts)
-const { blocks } = extract(doc, 'about:blank');    // main content, boilerplate removed (lib/parse/extract.ts)
+const blocks = htmlToBlocks(html);   // main content's text, boilerplate removed; works in the background script + Node (lib/parse/html.ts)
 ```
 
 Use the shared parser so that differences between algorithms come from the algorithms, not from parsing.
@@ -49,8 +48,7 @@ Use the shared parser so that differences between algorithms come from the algor
 1. Create `lib/diff/<name>.ts`:
 
    ```ts
-   import { extract } from '../parse/extract';
-   import { parseHtml } from '../parse/html';
+   import { htmlToBlocks } from '../parse/html';
    import type { DiffResult, TextRep } from './diff-interfaces';
    import { Differ } from './differ';
    import { MAX_RUNS, shortenRun, type PreviewRun } from './preview';
@@ -65,8 +63,7 @@ Use the shared parser so that differences between algorithms come from the algor
      readonly name = 'my-algorithm';
 
      protected parse(html: string): TextRep {
-       const { blocks } = extract(parseHtml(html), 'about:blank');
-       return { kind: 'text', tokens: blocks.flatMap((b) => b.split(' ')) };
+       return { kind: 'text', tokens: htmlToBlocks(html).flatMap((b) => b.split(' ')) };
      }
 
      protected computeDiff(oldRep: TextRep, newRep: TextRep): DiffResult<MyDiff> {
