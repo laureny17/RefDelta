@@ -19,7 +19,7 @@ export interface Snapshot {
 // `onSent`: called once the request is sent (after waiting for a rate-limit slot; see waybackFetch)
 export async function fetchSnapshotHtml(snapshot: Snapshot, onSent?: () => void): Promise<string> {
   const rawUrl = snapshot.snapshotUrl.replace(`/web/${snapshot.timestamp}/`, `/web/${snapshot.timestamp}id_/`);
-  const res = await waybackFetch(rawUrl, onSent); // paced + pauses on 429, like CDX lookups
+  const res = await waybackFetch(rawUrl, 'download', onSent); // paced (faster than lookups) + pauses on 429; see waybackRateLimit.ts
   if (!res.ok) throw new Error(`snapshot fetch failed: ${res.status}`);
   return res.text();
 }
@@ -31,7 +31,7 @@ export async function findLatestSnapshot(url: string): Promise<Snapshot | null> 
   query.searchParams.set('limit', '-1'); // negative limit = last N results, i.e. -1 = most recent
   query.searchParams.set('fl', 'timestamp,original,statuscode'); // fields to return in the response
 
-  const res = await waybackFetch(query); // paced + pauses on 429; see waybackRateLimit.ts
+  const res = await waybackFetch(query, 'lookup'); // paced + pauses on 429; see waybackRateLimit.ts
   if (!res.ok) throw new Error(`CDX request failed: ${res.status}`);
 
   const rows: string[][] = await res.json();

@@ -6,7 +6,7 @@ import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayb
 import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
 // max number of L1 links to look up per page (pretty arbitrarily chosen for now)
-// note that all Wayback requests are limited to 24/min (see waybackRateLimit.ts)
+// note that Wayback lookups are limited to 24/min (see waybackRateLimit.ts)
 // TODO: which links should we analyze? should there be a "smart" way to determine which ones to look into, if we're being selective?
 //       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
 const MAX_LINKS = 50;
@@ -135,8 +135,8 @@ async function diffAndSave(
 }
 
 // look up + check every L1 link, starting one lookup per rate-limit slot without waiting for earlier ones to
-// finish, so several can be in flight at once. every Wayback request (lookups + snapshot downloads, this run's
-// and other tabs') goes through waybackFetch, which keeps sends at least 2.5s apart (24/min; see waybackRateLimit.ts)
+// finish, so several can be in flight at once. every Wayback request (this run's and other tabs') goes through
+// waybackFetch, which paces lookups (24/min) and snapshot downloads (~456/min) on separate clocks (see waybackRateLimit.ts)
 async function analyzeLinks(
   linksToLookUp: string[],
   analysis: Analysis,
@@ -171,7 +171,7 @@ async function analyzeLinks(
     await update({ linkLookups: updatedLookups, totalDurationMs });
 
     // check every looked-up link for link rot (and diff it if it has a snapshot); the snapshot fetch goes
-    // through waybackFetch, so it shares slots with the remaining lookups
+    // through waybackFetch, on the download clock (so it doesn't hold up the remaining lookups)
     if ('snapshot' in result) {
       if (await diffAndSave(link, result.snapshot, analysis, update, isCurrent)) rateLimitHit = true;
     }
@@ -181,7 +181,7 @@ async function analyzeLinks(
   // this run is outdated or a 429 came back
   const lookupPromises: Promise<void>[] = [];
   for (const link of linksToLookUp) {
-    await waitForFreeSlot();
+    await waitForFreeSlot('lookup');
     if (!isCurrent() || rateLimitHit) break;
     lookupPromises.push(lookUpLink(link));
   }
