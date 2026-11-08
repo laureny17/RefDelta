@@ -46,7 +46,7 @@ export type SimilarityMetrics =
   | { algorithm: string; error: string };
 
 // for the main page: each strategy's main differ (full diff + similarity)
-export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
+export function measureMainPageDiffs(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
   return MAIN_DIFFERS.map((differ) => {
     try {
       const { diff, similarity, classification, timings } = differ.compare(snapshotHtml, liveHtml);
@@ -65,7 +65,7 @@ export function measureDiffers(snapshotHtml: string, liveHtml: string): DifferMe
 }
 
 // for each L1 link: each strategy's L1 differ, similarity only (see lib/linkDiff.ts)
-export function measureSimilarity(snapshotHtml: string, liveHtml: string): SimilarityMetrics[] {
+export function measureL1LinkSimilarities(snapshotHtml: string, liveHtml: string): SimilarityMetrics[] {
   return L1_DIFFERS.map((differ) => {
     try {
       const { similarity, classification, timings } = differ.similarity(snapshotHtml, liveHtml);

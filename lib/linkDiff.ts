@@ -6,7 +6,7 @@
 // only the L1 page's own content is diffed; its links (L2) aren't followed; we stop
 // after one level: when the user opens an L1 page, it becomes the new L0 and gets analyzed from there
 
-import { measureSimilarity, type SimilarityMetrics } from './metrics';
+import { measureL1LinkSimilarities, type SimilarityMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
 import { WaybackRateLimitedError } from './waybackRateLimit';
 
@@ -91,7 +91,7 @@ export async function diffLink(
     return { error: `snapshot: ${err}`, durationMs: durationMs() };
   }
 
-  return { live, metrics: measureSimilarity(snapshotHtml, liveHtml), durationMs: durationMs() };
+  return { live, metrics: measureL1LinkSimilarities(snapshotHtml, liveHtml), durationMs: durationMs() };
 }
 
 // why the live page counts as link rot, if it does:
