@@ -1,7 +1,7 @@
 import { analysisKey, type Analysis, type LinkLookup, type Times } from '@/lib/analysis';
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
-import { measureMainPageDiffs } from '@/lib/metrics';
+import { measureL0Diffs } from '@/lib/metrics';
 import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
@@ -90,7 +90,7 @@ async function analyzeTab(tabId: number) {
   if (snapshot) {
     try {
       const snapshotHtml = await timed(times, 'snapshotDownload', () => fetchSnapshotHtml(snapshot));
-      await update({ differMetrics: await timed(times, 'differs', async () => measureMainPageDiffs(snapshotHtml, liveHtml)) });
+      await update({ differMetrics: await timed(times, 'differs', async () => measureL0Diffs(snapshotHtml, liveHtml)) });
     } catch (err) {
       await update({ metricsError: `${err}` });
     }

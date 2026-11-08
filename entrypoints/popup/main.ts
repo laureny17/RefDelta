@@ -132,7 +132,7 @@ function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis)
     ['page', times.page, 'reading + parsing the live page'],
     ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
     ['snapshot download', times.snapshotDownload, "downloading the snapshot's HTML, incl. waiting for a rate-limit slot"],
-    ['differs', times.differs, 'running every main-page differ on snapshot vs live (breakdown below)'],
+    ['differs', times.differs, "running every differ for this page on snapshot vs live (breakdown below)"],
     ['link lookups + diffs', times.linkLookups, 'first L1 lookup started -> latest lookup/diff finished, incl. the waits between them'],
     // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
     ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],

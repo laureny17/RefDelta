@@ -6,7 +6,7 @@
 // only the L1 page's own content is diffed; its links (L2) aren't followed; we stop
 // after one level: when the user opens an L1 page, it becomes the new L0 and gets analyzed from there
 
-import { measureL1LinkSimilarities, type SimilarityMetrics } from './metrics';
+import { measureL1Similarities, type SimilarityMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
 import { WaybackRateLimitedError } from './waybackRateLimit';
 
@@ -61,7 +61,7 @@ export async function diffLink(
   try {
     // NOT through waybackFetch: this goes to the link's own site, so Wayback's rate limit doesn't apply
     // (needs host_permissions for all sites; see wxt.config.ts)
-    // raw HTML, before any JavaScript runs, same as the snapshot (unlike the main page, which we read after JS)
+    // raw HTML, before any JavaScript runs, same as the snapshot (unlike L0, which we read after JS)
     const res = await fetch(link, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
     live = { status: res.status, ...(res.redirected && { redirectedTo: res.url }) };
     const rot = rotReason(res);
@@ -91,7 +91,7 @@ export async function diffLink(
     return { error: `snapshot: ${err}`, durationMs: durationMs() };
   }
 
-  return { live, metrics: measureL1LinkSimilarities(snapshotHtml, liveHtml), durationMs: durationMs() };
+  return { live, metrics: measureL1Similarities(snapshotHtml, liveHtml), durationMs: durationMs() };
 }
 
 // why the live page counts as link rot, if it does:

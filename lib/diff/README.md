@@ -1,6 +1,8 @@
 # Diff algorithms
 
-Each diff algorithm ("differ") compares a page's Wayback snapshot to its live version. Every differ is one class in its own file, extending `Differ` (`differ.ts`). Differs are grouped into **strategies** (`DiffStrategy` in `lib/metrics.ts`): one differ for the main page and one for each L1 link (usually the same one). The extension runs every strategy on the same pages and shows their results side by side in the popup, so we can compare algorithms.
+**L0** = the page being analyzed; **L1** = the links on it.
+
+Each diff algorithm ("differ") compares a page's Wayback snapshot to its live version. Every differ is one class in its own file, extending `Differ` (`differ.ts`). Differs are grouped into **strategies** (`DiffStrategy` in `lib/metrics.ts`): one differ for L0 and one for each L1 link (usually the same one). The extension runs every strategy on the same pages and shows their results side by side in the popup, so we can compare algorithms.
 
 `myers.ts` is the baseline, usable as a reference when adding a new one.
 
@@ -91,17 +93,17 @@ Use the shared parser so that differences between algorithms come from the algor
 
    ```ts
    const STRATEGIES: DiffStrategy[] = [
-     { main: new MyersDiffer('word'), l1: new MyersDiffer('word') },
-     { main: new MyersDiffer('block'), l1: new MyersDiffer('block') },
-     { main: new MyDiffer(), l1: new MyDiffer() },   // ← here
+     { L0: new MyersDiffer('word'), L1: new MyersDiffer('word') },
+     { L0: new MyersDiffer('block'), L1: new MyersDiffer('block') },
+     { L0: new MyDiffer(), L1: new MyDiffer() },   // ← here
    ];
    ```
 
-   `main` and `l1` don't have to be the same differ, e.g. `{ main: new MyersDiffer('word'), l1: new MyDiffer() }` for Myers on the main page and a cheaper differ for L1 links. Each differ still runs only once per page, even if several strategies use it (differs are told apart by `name`)
+   `L0` and `L1` don't have to be the same differ, e.g. `{ L0: new MyersDiffer('word'), L1: new MyDiffer() }` for Myers on L0 and a cheaper differ for L1 links. Each differ still runs only once per page, even if several strategies use it (differs are told apart by `name`)
 
 ## Checking the results
 
-**In the extension:** run `npm run dev`, open a page, click "Analyze this page". The "Differ metrics" table shows a row per main-page differ (parse / diff / similarity time, diff size, similarity), and below it a collapsible preview of each one's diff. Each diffed L1 link shows every L1 differ's similarity. If your differ throws, its row (or its entry on a link) should show the error instead.
+**In the extension:** run `npm run dev`, open a page, click "Analyze this page". The "Differ metrics" table shows a row per L0 differ (parse / diff / similarity time, diff size, similarity), and below it a collapsible preview of each one's diff. Each diffed L1 link shows every L1 differ's similarity. If your differ throws, its row (or its entry on a link) should show the error instead.
 
 ## Avoiding conflicts
 
@@ -126,5 +128,5 @@ So we can build concurrently:
 ## TODOs
 
 - **Classifier:** labels unchanged / minor / major from the similarity; thresholds to be set by experiments; not built yet
-- **Strategy costs:** a popup table with each strategy's total compute time (main page + all its L1 links), to compare strategies as a whole
+- **Strategy costs:** a popup table with each strategy's total compute time (L0 + all its L1 links), to compare strategies as a whole
 - **Measuring accuracy:** Might want to have some way of scoring/benchmarking(?) the algorithms somehow, if we're looking to have some sort of quantitative comparison.
