@@ -1,6 +1,6 @@
 # Diff algorithms
 
-Each diff algorithm ("differ") compares a page's Wayback snapshot to its live version. Every differ is one class in its own file, extending `Differ` (`differ.ts`). The extension runs every differ on the same pages and shows their results side by side in the popup, so we can compare algorithms.
+Each diff algorithm ("differ") compares a page's Wayback snapshot to its live version. Every differ is one class in its own file, extending `Differ` (`differ.ts`). Differs are grouped into **strategies** (`DiffStrategy` in `lib/metrics.ts`): one differ for the main page and one for each L1 link (usually the same one). The extension runs every strategy on the same pages and shows their results side by side in the popup, so we can compare algorithms.
 
 `myers.ts` is the baseline, usable as a reference when adding a new one.
 
@@ -24,7 +24,7 @@ live HTML ─────┘                         └─ computeSimilarity �
 
 `compare()` also returns a classification (unchanged / minor / major) from the similarity, if the differ has a `Classifier` (`lib/classify/classify-interface.ts`); none exists yet as of 11/04
 
-`Differ.similarity(oldHtml, newHtml)` gets **just the similarity**, without a diff: it runs only `parse` + `computeSimilarity` (with no `diff` passed in). It's for the L1 links: we could compare every link's full diff up front vs. only a similarity during the crawl, with the full diff computed when the user opens the link. No need to write anything extra for it, as long as your `computeSimilarity` works without a diff. Used for L1 links when `L1_STRATEGY = 'similarity'` (`lib/linkDiff.ts`).
+`Differ.similarity(oldHtml, newHtml)` gets **just the similarity**, without a diff: it runs only `parse` + `computeSimilarity` (with no `diff` passed in). It's used for **every L1 link**: each link only needs a similarity score (to see a link's full diff, the user opens the link and clicks Analyze). Whether that's cheaper than a full diff depends on your algorithm: Myers needs the diff to get its similarity, so its `computeSimilarity` runs the diff itself; shingling doesn't. No need to write anything extra for it, as long as your `computeSimilarity` works without a diff.
 
 ## Representations
 
@@ -87,26 +87,28 @@ Use the shared parser so that differences between algorithms come from the algor
      }
    }
    ```
-2. Add one line to `DIFFERS` in `lib/metrics.ts`:
+2. Add one line to `STRATEGIES` in `lib/metrics.ts`:
 
    ```ts
-   const DIFFERS: Differ<Representation>[] = [
-     new MyersDiffer('word'),
-     new MyersDiffer('block'),
-     new MyDiffer(),   // ← here
+   const STRATEGIES: DiffStrategy[] = [
+     { main: new MyersDiffer('word'), l1: new MyersDiffer('word') },
+     { main: new MyersDiffer('block'), l1: new MyersDiffer('block') },
+     { main: new MyDiffer(), l1: new MyDiffer() },   // ← here
    ];
    ```
 
+   `main` and `l1` don't have to be the same differ, e.g. `{ main: new MyersDiffer('word'), l1: new MyDiffer() }` for Myers on the main page and a cheaper differ for L1 links. Each differ still runs only once per page, even if several strategies use it (differs are told apart by `name`)
+
 ## Checking the results
 
-**In the extension:** run `npm run dev`, open a page, click "Analyze this page". The "Differ metrics" table shows a row per algorithm (parse / diff / similarity time, diff size, similarity), and below it a collapsible preview of each algorithm's diff. If your differ throws, its row should show the error instead.
+**In the extension:** run `npm run dev`, open a page, click "Analyze this page". The "Differ metrics" table shows a row per main-page differ (parse / diff / similarity time, diff size, similarity), and below it a collapsible preview of each one's diff. Each diffed L1 link shows every L1 differ's similarity. If your differ throws, its row (or its entry on a link) should show the error instead.
 
 ## Avoiding conflicts
 
 So we can build concurrently:
 
 - **Put everything for your algorithm in your own file** (`lib/diff/<name>.ts`, plus helpers in their own files if needed)
-- **The only shared edit is your one line in `DIFFERS`.** Add it at the end of the list; one-line conflicts there are easy to resolve
+- **The only shared edit is your one line in `STRATEGIES`.** Add it at the end of the list; one-line conflicts there are easy to resolve
 - **Don't change `differ.ts`, `diff-interfaces.ts`, `preview.ts`, `metrics.ts`, or `lib/parse/`** in an algorithm PR. If you need a change there (e.g. a new field everyone should report, or a parser option), make it a separate small PR, since every differ depends on them
 - Branch off the latest `main` and keep your PR to one algorithm
 
@@ -124,5 +126,5 @@ So we can build concurrently:
 ## TODOs
 
 - **Classifier:** labels unchanged / minor / major from the similarity; thresholds to be set by experiments; not built yet
-- **L1 links:** `L1_STRATEGY` in `lib/linkDiff.ts` picks between a full diff for every link during Analyze (`'full'`) and only a similarity score per link (`'similarity'`). (in `'similarity'` mode, opening the link and clicking Analyze gives its full diff). Storage can't be compared yet, since neither mode saves diffs
+- **Strategy costs:** a popup table with each strategy's total compute time (main page + all its L1 links), to compare strategies as a whole
 - **Measuring accuracy:** Might want to have some way of scoring/benchmarking(?) the algorithms somehow, if we're looking to have some sort of quantitative comparison.

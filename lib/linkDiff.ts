@@ -1,20 +1,14 @@
 // checks + diffs one L1 link: fetches its live page (from the link's own site) and checks it for link rot
 // if it's fine and has a snapshot, fetches the snapshot's HTML (from Wayback) and
-// runs every differ on them, like we do for the main page.
-
-// two strategies, picked with L1_STRATEGY:
-//   'full': full diff for every link up front (Differ.compare())
-//   'similarity': only a similarity score per link (Differ.similarity()); to get the full diff, open the link and click Analyze
+// computes each strategy's L1 similarity score (see DiffStrategy in lib/metrics.ts); no full diff is kept.
+// to see a link's full diff, open the link and click Analyze
 
 // only the L1 page's own content is diffed; its links (L2) aren't followed; we stop
 // after one level: when the user opens an L1 page, it becomes the new L0 and gets analyzed from there
 
-import { measureDiffers, measureSimilarity, type DifferMetrics, type SimilarityMetrics } from './metrics';
+import { measureSimilarity, type SimilarityMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
 import { WaybackRateLimitedError } from './waybackRateLimit';
-
-// the strategy to use for diffing L1 links
-export const L1_STRATEGY: 'full' | 'similarity' = 'full';
 
 // give up on a live page after this long (same as Wayback requests)
 const LIVE_TIMEOUT_MS = 30 * 1000;
@@ -27,9 +21,8 @@ const LIVE_TIMEOUT_MS = 30 * 1000;
 const BLOCKED_STATUSES = [401, 403, 429];
 
 export type LinkDiff =
-  // both versions fetched + diffed
-  // (in 'similarity' mode, `metrics` has no diff info, just similarities)
-  | { live: LiveFetch; metrics: (DifferMetrics | SimilarityMetrics)[]; durationMs: number } // without previews (see diffLink)
+  // both versions fetched + compared: each L1 differ's similarity
+  | { live: LiveFetch; metrics: SimilarityMetrics[]; durationMs: number }
   // link rot: the live page is gone or the site can't be reached, so it isn't diffed
   | { live?: LiveFetch; rot: string; durationMs: number } // no `live` if the site couldn't be reached at all
   // live page is fine but not diffed (e.g. no snapshot, not an HTML page, blocked)
@@ -98,11 +91,7 @@ export async function diffLink(
     return { error: `snapshot: ${err}`, durationMs: durationMs() };
   }
 
-  // no previews: we diff up to MAX_LINKS links, and all results are re-saved on every update
-  const metrics = L1_STRATEGY === 'full'
-    ? measureDiffers(snapshotHtml, liveHtml, { preview: false }) // compute full diff
-    : measureSimilarity(snapshotHtml, liveHtml); // only compute similarity score
-  return { live, metrics, durationMs: durationMs() };
+  return { live, metrics: measureSimilarity(snapshotHtml, liveHtml), durationMs: durationMs() };
 }
 
 // why the live page counts as link rot, if it does:

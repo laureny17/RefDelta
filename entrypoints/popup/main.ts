@@ -132,12 +132,12 @@ function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis)
     ['page', times.page, 'reading + parsing the live page'],
     ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
     ['snapshot download', times.snapshotDownload, "downloading the snapshot's HTML, incl. waiting for a rate-limit slot"],
-    ['differs', times.differs, 'running every differ on snapshot vs live (breakdown below)'],
+    ['differs', times.differs, 'running every main-page differ on snapshot vs live (breakdown below)'],
     ['link lookups + diffs', times.linkLookups, 'first L1 lookup started -> latest lookup/diff finished, incl. the waits between them'],
     // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
     ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
-    // leaves out network time (which varies run to run), so it's the number to compare L1_STRATEGY 'full' vs 'similarity' with
-    ['L1 diff computing', linkComputeMs, 'parse + diff + similarity for every L1 link and algorithm, added up'],
+    // leaves out network time (which varies run to run), so it's the number to compare L1 differs with
+    ['L1 diff computing', linkComputeMs, 'parse + similarity for every L1 link and L1 differ, added up'],
   ];
   const section = document.createElement('div');
   section.className = 'times';
@@ -159,14 +159,11 @@ function duration(ms: number): string {
   return ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
-// time spent computing for one link (parse + diff + similarity, all algorithms), without network time
+// time spent computing for one link (parse + similarity, all L1 differs), without network time
+// (a differ whose similarity needs a full diff, e.g. Myers, computes it inside similarity, so it's counted there)
 function computeMs(diff: LinkDiff): number {
   if (!('metrics' in diff)) return 0;
-  return diff.metrics.reduce((sum, m) => {
-    if ('error' in m) return sum;
-    const { parseMs, similarityMs } = m.timings;
-    return sum + parseMs + similarityMs + ('diffMs' in m.timings ? m.timings.diffMs : 0); // no diffMs in 'similarity' mode
-  }, 0);
+  return diff.metrics.reduce((sum, m) => ('error' in m ? sum : sum + m.timings.parseMs + m.timings.similarityMs), 0);
 }
 
 // one link in the list: its status badge (always first, so they line up), the URL, then the details
