@@ -139,7 +139,7 @@ details[data-key='links'] ol {
 }
 .link-status {
   display: inline-block;
-  min-width: 8em; /* same width for every badge, so the URLs after them line up */
+  min-width: 10em; /* same width for every badge, so the URLs after them line up */
   margin-right: 0.5em;
   padding: 0 0.4em;
   border-radius: 4px;
@@ -148,9 +148,15 @@ details[data-key='links'] ol {
   text-align: center;
   white-space: nowrap;
 }
-.link-status.waiting,
+.link-status.waiting-lookup {
+  background: rgba(128, 128, 128, 0.45);
+}
+.link-status.waiting-download {
+  background: rgba(128, 128, 128, 0.2);
+}
 .link-status.stopped {
-  background: rgba(128, 128, 128, 0.25);
+  background: rgba(128, 128, 128, 0.3);
+  opacity: 0.7;
 }
 .link-status.active {
   background: rgba(56, 139, 253, 0.35);

@@ -8,7 +8,8 @@ import type { Snapshot } from '@/lib/wayback';
 // each L1 link's status, shown as a badge at the start of its line (and counted in the links heading, in this order).
 // `kind` picks the badge color (see .link-status in style.css)
 const STATUS_KINDS = {
-  'waiting': 'waiting', // for a rate-limit slot
+  'waiting: lookup': 'waiting-lookup', // for a rate-limit slot
+  'waiting: download': 'waiting-download', // for a rate-limit slot
   'looking up': 'active',
   'checking live': 'active',
   'downloading': 'active',
@@ -75,7 +76,7 @@ function render(analysis: Analysis | undefined) {
     [...output.querySelectorAll<HTMLDetailsElement>('details[open]')].map((d) => d.dataset.key),
   );
 
-  // links heading: how many links have each status, e.g. "50 links: 12 diffed · 2 link rot · 30 waiting"
+  // links heading: how many links have each status, e.g. "50 links: 12 diffed · 2 link rot · 30 waiting: lookup"
   const statuses = livePage.links.map((link) => linkStatus(link, analysis));
   const counts = STATUS_LABELS.map((label) => [label, statuses.filter((s) => s.label === label).length] as const)
     .filter(([, n]) => n > 0)
@@ -190,7 +191,7 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
     if (stopped) return { label: 'stopped', details: [phase ? 'lookup sent, result dropped when lookups stopped' : 'lookups stopped before its turn'] };
     return phase
       ? { label: 'looking up', details: ['asking Wayback for its latest snapshot'] }
-      : { label: 'waiting', details: ['waiting for a rate-limit slot to look up its snapshot'] };
+      : { label: 'waiting: lookup', details: ['waiting for a rate-limit slot to look up its snapshot'] };
   }
   if ('error' in lookup) return { label: 'failed', details: [`snapshot lookup failed: ${lookup.error} (${duration(lookup.durationMs)})`] };
 
@@ -206,7 +207,7 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
     if (phase === 'checkingLive' || phase === 'lookingUp') return withFound('checking live', 'fetching the live page');
     if (phase === 'downloadingSnapshot') return withFound('downloading', 'downloading the snapshot');
     if (stopped) return withFound('stopped', 'not diffed: lookups stopped');
-    return withFound('waiting', 'waiting for a rate-limit slot to download the snapshot');
+    return withFound('waiting: download', 'waiting for a rate-limit slot to download the snapshot');
   }
   // couldn't fetch the live page (e.g. timeout) or the snapshot
   if ('error' in diff) return withFound('failed', `check failed: ${diff.error}`);
