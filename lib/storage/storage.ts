@@ -3,6 +3,7 @@ import type { ChangeLabel } from "../classify/classify-interface";
 
 
 // the classifier's label, or "rotted" if the link is dead (decided before any diff runs, so it isn't a classifier label)
+// TODO: add more types instead of a null change_type (e.g. "no_snapshot", "blocked"), if we want to tell those apart in saved data?
 export type ChangeType = ChangeLabel | "rotted";
 
 export interface CrawlRecord {
@@ -13,7 +14,7 @@ export interface CrawlRecord {
   session_id: string;
   parent_crawl_ts: number;      // ms since when the user clicked
   crawl_timestamp: number;      // ms since when this URL was fetched
-  change_type: ChangeType;
+  change_type: ChangeType | null; // null = no verdict (e.g. no snapshot, not HTML, blocked, failed)
   parent_url: string | null;    // null for the L0 page
   diff: unknown;            // TODO?     
 }
