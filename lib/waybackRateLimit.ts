@@ -61,8 +61,9 @@ export async function waybackFetch(url: string | URL): Promise<Response> {
 // many requests (e.g. L1 lookups), so they start one per slot instead of all at once. starting them all at once
 // would still be paced, but would reserve slots far ahead, holding up other runs' requests and sending
 // requests for runs that are already outdated
+// re-checks after each sleep, since another request (e.g. a snapshot download) may have taken the slot meanwhile
 export async function waitForFreeSlot() {
-  await sleep(nextSlotAt - Date.now());
+  while (nextSlotAt > Date.now()) await sleep(nextSlotAt - Date.now());
 }
 
 // wait for the next send slot: ALL Wayback requests (every caller, every tab) share one clock,

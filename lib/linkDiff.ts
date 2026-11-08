@@ -45,14 +45,25 @@ export interface LiveFetch {
   redirectedTo?: string;
 }
 
+// the step diffLink is on, for showing progress
+export type LinkDiffPhase =
+  | 'checkingLive' // fetching the live page
+  | 'downloadingSnapshot'; // fetching the snapshot's HTML from Wayback (may first wait for a rate-limit slot)
+
 // `snapshot`: the link's latest snapshot, or null if it has none (then it's only checked for link rot)
+// `onPhase`: called as each step starts; not awaited, so e.g. saving progress doesn't delay the step or add to its time
 // throws WaybackRateLimitedError if Wayback rate-limits the snapshot fetch, so the caller can stop
-export async function diffLink(link: string, snapshot: Snapshot | null): Promise<LinkDiff> {
+export async function diffLink(
+  link: string,
+  snapshot: Snapshot | null,
+  onPhase: (phase: LinkDiffPhase) => void = () => {},
+): Promise<LinkDiff> {
   const start = performance.now();
   const durationMs = () => performance.now() - start;
 
   let live: LiveFetch;
   let liveHtml: string;
+  onPhase('checkingLive');
   try {
     // NOT through waybackFetch: this goes to the link's own site, so Wayback's rate limit doesn't apply
     // (needs host_permissions for all sites; see wxt.config.ts)
@@ -77,6 +88,7 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
   }
 
   let snapshotHtml: string;
+  onPhase('downloadingSnapshot');
   try {
     snapshotHtml = await fetchSnapshotHtml(snapshot); // 1 more Wayback request, rate-limited by waybackFetch
   } catch (err) {

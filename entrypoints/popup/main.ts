@@ -53,9 +53,11 @@ function render(analysis: Analysis | undefined) {
   );
 
   const toLookUp = analysis.linksToLookUp ?? [];
-  const done = Object.keys(analysis.linkLookups ?? {}).length;
+  const notDone = toLookUp.filter((link) => !analysis.linkLookups?.[link]);
+  const sent = notDone.filter((link) => analysis.linkPhases?.[link]).length; // lookup sent, no result yet
   const linksLabel = toLookUp.length
-    ? `${livePage.links.length} links (looked up ${done}/${toLookUp.length})`
+    ? `${livePage.links.length} links (looked up ${toLookUp.length - notDone.length}/${toLookUp.length}; ` +
+      `${sent} sent, ${notDone.length - sent} ${analysis.linkLookupsStopped ? 'never sent' : 'waiting for a rate-limit slot'})`
     : `${livePage.links.length} links`;
 
   output.replaceChildren(
@@ -156,7 +158,7 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
   if (!analysis.linksToLookUp?.includes(link)) {
     status = ['not checked']; // beyond MAX_LINKS
   } else if (!lookup) {
-    status = [analysis.linkLookupsStopped ? 'skipped' : 'pending...'];
+    status = [lookupProgress(link, analysis)];
   } else if ('error' in lookup) {
     status = [`lookup failed: ${lookup.error} (${lookup.durationMs.toFixed(0)}ms)`];
   } else if (!lookup.snapshot) {
@@ -171,11 +173,30 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
   return [a, ' — ', ...status];
 }
 
+// for a link whose lookup has no result yet: whether its request was sent (see LinkPhase in lib/analysis.ts)
+function lookupProgress(link: string, analysis: Analysis): string {
+  const sent = analysis.linkPhases?.[link] !== undefined;
+  if (analysis.linkLookupsStopped) {
+    // a lookup that was in flight when lookups stopped has its result dropped (see analyzeLinks in background.ts)
+    return sent ? 'lookup sent, result dropped (lookups stopped)' : 'not looked up (lookups stopped before its turn)';
+  }
+  return sent ? 'looking up snapshot (request sent)...' : 'waiting for a rate-limit slot';
+}
+
+// for a looked-up link with no check/diff result yet: the step it's on
+function linkDiffProgress(link: string, analysis: Analysis): string {
+  const phase = analysis.linkPhases?.[link];
+  // the live page check keeps going after lookups stop, but the snapshot download fails right away
+  if (phase === 'checkingLive') return 'checking live page...';
+  if (analysis.linkLookupsStopped) return 'not diffed (lookups stopped)';
+  if (phase === 'downloadingSnapshot') return 'downloading snapshot (may be waiting for a rate-limit slot)...';
+  return 'checking live page...'; // about to start
+}
+
 // for a link with a snapshot: each differ's similarity (snapshot vs live), or why it wasn't diffed
 function linkDiffStatus(link: string, analysis: Analysis): string {
   const diff = analysis.linkDiffs?.[link];
-  // no result yet: still running, or never will be if lookups stopped (e.g. rate limit)
-  if (!diff) return analysis.linkLookupsStopped ? 'not checked' : 'checking live page...';
+  if (!diff) return linkDiffProgress(link, analysis);
   // couldn't fetch the live page (e.g. timeout) or the snapshot
   if ('error' in diff) return `check failed: ${diff.error}`;
   // link rot: page gone or site unreachable (see rotReason in lib/linkDiff.ts)

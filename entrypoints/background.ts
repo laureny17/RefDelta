@@ -124,7 +124,7 @@ async function diffAndSave(
   isCurrent: () => boolean,
 ): Promise<boolean> {
   try {
-    const diff = await diffLink(link, snapshot);
+    const diff = await diffLink(link, snapshot, (phase) => void update({ linkPhases: { ...analysis.linkPhases, [link]: phase } }));
     if (isCurrent()) await update({ linkDiffs: { ...analysis.linkDiffs, [link]: diff } });
     return false;
   } catch (err) {
@@ -150,6 +150,9 @@ async function analyzeLinks(
     let result: LinkLookup;
 
     try {
+      // not awaited: the lookup has to take its rate-limit slot right away, or the loop below would see the
+      // slot still free and start more lookups while this save is in progress
+      void update({ linkPhases: { ...analysis.linkPhases, [link]: 'lookingUp' } });
       const snapshot = await findLatestSnapshot(link);
       result = { snapshot, durationMs: performance.now() - startTime };
     } catch (err) {
