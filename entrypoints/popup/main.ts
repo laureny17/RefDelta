@@ -5,6 +5,29 @@ import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
 
+// each L1 link's status, shown as a badge at the start of its line (and counted in the links heading, in this order).
+// `kind` picks the badge color (see .link-status in style.css)
+const STATUS_KINDS = {
+  'waiting': 'waiting', // for a rate-limit slot
+  'looking up': 'active',
+  'checking live': 'active',
+  'downloading': 'active',
+  'diffed': 'ok',
+  'LINK ROT': 'rot',
+  'no snapshot': 'skipped',
+  'not diffed': 'skipped',
+  'failed': 'error',
+  'stopped': 'stopped', // lookups stopped (e.g. Wayback rate limit) before this link finished
+  'not checked': 'stopped', // beyond the links we look up (MAX_LINKS in background.ts)
+} as const;
+const STATUS_LABELS = Object.keys(STATUS_KINDS) as StatusLabel[];
+type StatusLabel = keyof typeof STATUS_KINDS;
+
+interface LinkStatus {
+  label: StatusLabel;
+  details: (string | Node)[]; // shown after the URL
+}
+
 // TODO: change extension to show results as overlay rather than through extension popup
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -52,18 +75,19 @@ function render(analysis: Analysis | undefined) {
     [...output.querySelectorAll<HTMLDetailsElement>('details[open]')].map((d) => d.dataset.key),
   );
 
-  const toLookUp = analysis.linksToLookUp ?? [];
-  const done = Object.keys(analysis.linkLookups ?? {}).length;
-  const linksLabel = toLookUp.length
-    ? `${livePage.links.length} links (looked up ${done}/${toLookUp.length})`
-    : `${livePage.links.length} links`;
+  // links heading: how many links have each status, e.g. "50 links: 12 diffed · 2 link rot · 30 waiting"
+  const statuses = livePage.links.map((link) => linkStatus(link, analysis));
+  const counts = STATUS_LABELS.map((label) => [label, statuses.filter((s) => s.label === label).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([label, n]) => `${n} ${label.toLowerCase()}`);
+  const linksLabel = `${livePage.links.length} links${counts.length ? `: ${counts.join(' · ')}` : ''}`;
 
   output.replaceChildren(
     title,
     snapshotLine(analysis),
     timesSection(analysis),
     metricsSection(analysis, open), // stats from running each differ on the snapshot vs the live page
-    expandableList('links', linksLabel, livePage.links.map((link) => linkItem(link, analysis)), open),
+    expandableList('links', linksLabel, livePage.links.map((link, i) => linkItem(link, statuses[i]!)), open),
     expandableList(
       'malformed',
       `${livePage.malformed.length} malformed`,
@@ -102,7 +126,7 @@ function render(analysis: Analysis | undefined) {
 // TEMPORARY: wall-clock time of each step so far (see Times in lib/analysis.ts), one row per step; "-" = not done yet
 function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis): HTMLElement {
   const linkComputeMs = Object.values(linkDiffs).reduce((sum, d) => sum + computeMs(d), 0);
-  const steps: [string, number | undefined, string, ((ms: number) => string)?][] = [
+  const steps: [string, number | undefined, string][] = [
     ['total', times.total, 'since clicking Analyze'],
     ['page', times.page, 'reading + parsing the live page'],
     ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
@@ -112,29 +136,26 @@ function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis)
     // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
     ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
     // leaves out network time (which varies run to run), so it's the number to compare L1_STRATEGY 'full' vs 'similarity' with
-    ['L1 diff computing', linkComputeMs, 'parse + diff + similarity for every L1 link and algorithm, added up', millis],
+    ['L1 diff computing', linkComputeMs, 'parse + diff + similarity for every L1 link and algorithm, added up'],
   ];
   const section = document.createElement('div');
   section.className = 'times';
   const heading = document.createElement('h3');
   heading.textContent = 'Time';
   const table = document.createElement('table');
-  for (const [name, ms, description, format = seconds] of steps) {
+  for (const [name, ms, description] of steps) {
     const row = table.insertRow();
     row.insertCell().textContent = name;
-    row.insertCell().textContent = ms === undefined ? '-' : format(ms);
+    row.insertCell().textContent = ms === undefined ? '-' : duration(ms);
     row.insertCell().textContent = description;
   }
   section.append(heading, table);
   return section;
 }
 
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(ms < 1000 ? 2 : 1)}s`;
-}
-
-function millis(ms: number): string {
-  return `${ms.toFixed(1)} ms`;
+// every time shown in the popup: ms under 1s, s from 1s up
+function duration(ms: number): string {
+  return ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
 // time spent computing for one link (parse + diff + similarity, all algorithms), without network time
@@ -147,42 +168,53 @@ function computeMs(diff: LinkDiff): number {
   }, 0);
 }
 
-// one link in the list: the URL, then its Wayback lookup status
-function linkItem(link: string, analysis: Analysis): (string | Node)[] {
-  const a = plainLink(link);
-
-  const lookup = analysis.linkLookups?.[link];
-  let status: (string | Node)[];
-  if (!analysis.linksToLookUp?.includes(link)) {
-    status = ['not checked']; // beyond MAX_LINKS
-  } else if (!lookup) {
-    status = [analysis.linkLookupsStopped ? 'skipped' : 'pending...'];
-  } else if ('error' in lookup) {
-    status = [`lookup failed: ${lookup.error} (${lookup.durationMs.toFixed(0)}ms)`];
-  } else if (!lookup.snapshot) {
-    status = [`no snapshot (${lookup.durationMs.toFixed(0)}ms) — `, linkDiffStatus(link, analysis)];
-  } else {
-    status = [
-      snapshotLink(lookup.snapshot),
-      ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms) — `,
-      linkDiffStatus(link, analysis),
-    ];
-  }
-  return [a, ' — ', ...status];
+// one link in the list: its status badge (always first, so they line up), the URL, then the details
+function linkItem(link: string, { label, details }: LinkStatus): (string | Node)[] {
+  const badge = document.createElement('span');
+  badge.className = `link-status ${STATUS_KINDS[label]}`;
+  badge.textContent = label;
+  return [badge, plainLink(link), ' — ', ...details];
 }
 
-// for a link with a snapshot: each differ's similarity (snapshot vs live), or why it wasn't diffed
-function linkDiffStatus(link: string, analysis: Analysis): string {
-  const diff = analysis.linkDiffs?.[link];
-  // no result yet: still running, or never will be if lookups stopped (e.g. rate limit)
-  if (!diff) return analysis.linkLookupsStopped ? 'not checked' : 'checking live page...';
+// a link's status: its result if it has one, otherwise the step it's on (see LinkPhase in lib/analysis.ts)
+function linkStatus(link: string, analysis: Analysis): LinkStatus {
+  const { linkPhases = {}, linkLookups = {}, linkDiffs = {}, linkLookupsStopped: stopped } = analysis;
+  if (!analysis.linksToLookUp?.includes(link)) {
+    return { label: 'not checked', details: [`only the first ${analysis.linksToLookUp?.length ?? 0} links are checked`] };
+  }
+
+  const phase = linkPhases[link];
+  const lookup = linkLookups[link];
+  if (!lookup) {
+    // a lookup that was in flight when lookups stopped has its result dropped (see analyzeLinks in background.ts)
+    if (stopped) return { label: 'stopped', details: [phase ? 'lookup sent, result dropped when lookups stopped' : 'lookups stopped before its turn'] };
+    return phase
+      ? { label: 'looking up', details: ['asking Wayback for its latest snapshot'] }
+      : { label: 'waiting', details: ['waiting for a rate-limit slot to look up its snapshot'] };
+  }
+  if ('error' in lookup) return { label: 'failed', details: [`snapshot lookup failed: ${lookup.error} (${duration(lookup.durationMs)})`] };
+
+  // what the lookup found, shown before the rest of the details
+  const found = lookup.snapshot
+    ? [snapshotLink(lookup.snapshot), ` (${statusLabel(lookup.snapshot.statusCode)}, found in ${duration(lookup.durationMs)}) — `]
+    : [`no snapshot (${duration(lookup.durationMs)}) — `];
+  const withFound = (label: StatusLabel, detail: string): LinkStatus => ({ label, details: [...found, detail] });
+
+  const diff = linkDiffs[link];
+  if (!diff) {
+    // the live check and an already-sent download keep going after lookups stop; a download still waiting for its slot doesn't
+    if (phase === 'checkingLive' || phase === 'lookingUp') return withFound('checking live', 'fetching the live page');
+    if (phase === 'downloadingSnapshot') return withFound('downloading', 'downloading the snapshot');
+    if (stopped) return withFound('stopped', 'not diffed: lookups stopped');
+    return withFound('waiting', 'waiting for a rate-limit slot to download the snapshot');
+  }
   // couldn't fetch the live page (e.g. timeout) or the snapshot
-  if ('error' in diff) return `check failed: ${diff.error}`;
+  if ('error' in diff) return withFound('failed', `check failed: ${diff.error}`);
   // link rot: page gone or site unreachable (see rotReason in lib/linkDiff.ts)
-  if ('rot' in diff) return `LINK ROT: ${diff.rot}`;
+  if ('rot' in diff) return withFound('LINK ROT', diff.rot);
   const redirect = diff.live.redirectedTo ? ` (live page redirected to ${diff.live.redirectedTo})` : '';
   // live page is fine but not diffed (e.g. no snapshot, a PDF, or blocked)
-  if ('skipped' in diff) return `not diffed: ${diff.skipped}${redirect}`;
+  if ('skipped' in diff) return withFound(lookup.snapshot ? 'not diffed' : 'no snapshot', `${diff.skipped}${redirect}`);
   // diffed: one "<algorithm> <similarity> (label)" per differ, e.g. "myers-word 64% (major)" and "myers-block 95% (minor)"
   const results = diff.metrics.map((m) =>
     'error' in m
@@ -190,7 +222,7 @@ function linkDiffStatus(link: string, analysis: Analysis): string {
       : `${m.algorithm} ${(m.similarity * 100).toFixed(1)}%${m.label ? ` (${m.label})` : ''}`,
   );
   // (total time incl. network, time spent computing only)
-  return `${results.join(' · ')}${redirect} (${seconds(diff.durationMs)} total, ${millis(computeMs(diff))} computing)`;
+  return withFound('diffed', `${results.join(' · ')}${redirect} (${duration(diff.durationMs)} total, ${duration(computeMs(diff))} computing)`);
 }
 
 // one image in the list: its URL, then its alt text (if any)
@@ -236,7 +268,7 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
       continue;
     }
     for (const ms of [r.timings.parseMs, r.timings.diffMs, r.timings.similarityMs]) {
-      row.insertCell().textContent = `${ms.toFixed(1)} ms`;
+      row.insertCell().textContent = duration(ms);
     }
     row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
     row.insertCell().textContent = `${(r.similarity * 100).toFixed(1)}%`;

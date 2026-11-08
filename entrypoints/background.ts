@@ -3,17 +3,13 @@ import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { measureDiffers } from '@/lib/metrics';
 import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayback';
-import { WaybackRateLimitedError, pauseForRateLimit, throwIfPaused, waitForSlot } from '@/lib/waybackQueue';
+import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
 // max number of L1 links to look up per page (pretty arbitrarily chosen for now)
-// note that all Wayback requests are limited to 24/min (see waybackQueue.ts)
+// note that all Wayback requests are limited to 24/min (see waybackRateLimit.ts)
 // TODO: which links should we analyze? should there be a "smart" way to determine which ones to look into, if we're being selective?
 //       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
 const MAX_LINKS = 50;
-
-// Set to true to use concurrent lookups (sent every 2.5s without waiting for responses)
-// Set to false to use sequential lookups (one at a time)
-const USE_CONCURRENT = true;
 
 // mapping for the current analysis run for each tab (tabId -> runId)
 const currentRun = new Map<number, number>();
@@ -90,7 +86,7 @@ async function analyzeTab(tabId: number) {
   }
 
   // diff the snapshot against the live page with every differ. the CDX lookup above only gives us the
-  // snapshot's link; following it to get the HTML is 1 more Wayback request (through the same queue)
+  // snapshot's link; following it to get the HTML is 1 more Wayback request (paced like the lookup)
   if (snapshot) {
     try {
       const snapshotHtml = await timed(times, 'snapshotDownload', () => fetchSnapshotHtml(snapshot));
@@ -105,11 +101,7 @@ async function analyzeTab(tabId: number) {
   linksStart = performance.now();
   await update({ linksToLookUp, linkLookups: {}, linkDiffs: {} });
 
-  if (USE_CONCURRENT) {
-    await analyzeLinksConcurrent(linksToLookUp, analysis, update, isCurrent);
-  } else {
-    await analyzeLinksSequential(linksToLookUp, analysis, update, isCurrent);
-  }
+  await analyzeLinks(linksToLookUp, analysis, update, isCurrent);
 }
 
 // run `fn`, recording how long it took (wall-clock) in times[step], even if it throws
@@ -119,43 +111,6 @@ async function timed<T>(times: Times, step: Exclude<keyof Times, 'total'>, fn: (
     return await fn();
   } finally {
     times[step] = performance.now() - t;
-  }
-}
-
-async function analyzeLinksSequential(
-  linksToLookUp: string[],
-  analysis: Analysis,
-  update: (changes: Partial<Analysis>) => Promise<void>,
-  isCurrent: () => boolean,
-) {
-  for (const link of linksToLookUp) {
-    if (!isCurrent()) return;
-
-    const startTime = performance.now();
-    let result: LinkLookup;
-
-    try {
-      const snapshot = await findLatestSnapshot(link);
-      result = { snapshot, durationMs: performance.now() - startTime };
-    } catch (err) {
-      const durationMs = performance.now() - startTime;
-      if (err instanceof WaybackRateLimitedError) {
-        await update({ linkLookupsStopped: err.message });
-        return;
-      }
-      result = { error: `${err}`, durationMs };
-    }
-
-    console.log('[RefDelta] link lookup', link, result);
-    const updatedLookups = { ...analysis.linkLookups, [link]: result };
-    const totalDurationMs = Object.values(updatedLookups).reduce((sum, r) => sum + r.durationMs, 0);
-    await update({ linkLookups: updatedLookups, totalDurationMs });
-
-    // check every looked-up link for link rot (and diff it if it has a snapshot)
-    if ('snapshot' in result) {
-      const rateLimited = await diffAndSave(link, result.snapshot, analysis, update, isCurrent);
-      if (rateLimited) return;
-    }
   }
 }
 
@@ -169,7 +124,7 @@ async function diffAndSave(
   isCurrent: () => boolean,
 ): Promise<boolean> {
   try {
-    const diff = await diffLink(link, snapshot);
+    const diff = await diffLink(link, snapshot, (phase) => void update({ linkPhases: { ...analysis.linkPhases, [link]: phase } }));
     if (isCurrent()) await update({ linkDiffs: { ...analysis.linkDiffs, [link]: diff } });
     return false;
   } catch (err) {
@@ -179,17 +134,15 @@ async function diffAndSave(
   }
 }
 
-// concurrent
-// fire lookups in parallel with staggered starts to respect rate limit
-// sends requests every 2.5s (24/min), but allows multiple to be ongoing at once
-// (pacing uses waitForSlot, the same clock as every other Wayback request, incl. other tabs' runs)
-async function analyzeLinksConcurrent(
+// look up + check every L1 link, starting one lookup per rate-limit slot without waiting for earlier ones to
+// finish, so several can be in flight at once. every Wayback request (lookups + snapshot downloads, this run's
+// and other tabs') goes through waybackFetch, which keeps sends at least 2.5s apart (24/min; see waybackRateLimit.ts)
+async function analyzeLinks(
   linksToLookUp: string[],
   analysis: Analysis,
   update: (changes: Partial<Analysis>) => Promise<void>,
   isCurrent: () => boolean,
 ) {
-  const TIMEOUT_MS = 30000;
   let rateLimitHit = false;
 
   const lookUpLink = async (link: string) => {
@@ -197,7 +150,10 @@ async function analyzeLinksConcurrent(
     let result: LinkLookup;
 
     try {
-      const snapshot = await findLatestSnapshotParallel(link, TIMEOUT_MS);
+      // not awaited: the lookup has to take its rate-limit slot right away, or the loop below would see the
+      // slot still free and start more lookups while this save is in progress
+      void update({ linkPhases: { ...analysis.linkPhases, [link]: 'lookingUp' } });
+      const snapshot = await findLatestSnapshot(link);
       result = { snapshot, durationMs: performance.now() - startTime };
     } catch (err) {
       const durationMs = performance.now() - startTime;
@@ -215,51 +171,20 @@ async function analyzeLinksConcurrent(
     await update({ linkLookups: updatedLookups, totalDurationMs });
 
     // check every looked-up link for link rot (and diff it if it has a snapshot); the snapshot fetch goes
-    // through the Wayback queue, so it shares slots with the remaining lookups
+    // through waybackFetch, so it shares slots with the remaining lookups
     if ('snapshot' in result) {
       if (await diffAndSave(link, result.snapshot, analysis, update, isCurrent)) rateLimitHit = true;
     }
   };
 
-  // start one lookup per slot (without waiting for it to finish); stop starting new ones once
+  // start one lookup per free slot (without waiting for it to finish); stop starting new ones once
   // this run is outdated or a 429 came back
   const lookupPromises: Promise<void>[] = [];
   for (const link of linksToLookUp) {
-    await waitForSlot();
+    await waitForFreeSlot();
     if (!isCurrent() || rateLimitHit) break;
     lookupPromises.push(lookUpLink(link));
   }
 
   await Promise.allSettled(lookupPromises);
-}
-
-
-async function findLatestSnapshotParallel(url: string, timeoutMs: number): Promise<Snapshot | null> {
-  const query = new URL('https://web.archive.org/cdx/search/cdx');
-  query.searchParams.set('url', url);
-  query.searchParams.set('output', 'json');
-  query.searchParams.set('limit', '-1');
-  query.searchParams.set('fl', 'timestamp,original,statuscode');
-
-  await throwIfPaused(); // don't send anything while paused from an earlier 429
-
-  let res: Response;
-  try {
-    res = await fetch(query, { signal: AbortSignal.timeout(timeoutMs) });
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'TimeoutError') {
-      throw new Error(`Wayback request timed out after ${timeoutMs / 1000}s`);
-    }
-    throw err;
-  }
-
-  if (res.status === 429) throw await pauseForRateLimit(res); // saves the pause for later requests
-
-  if (!res.ok) throw new Error(`CDX request failed: ${res.status}`);
-
-  const rows: string[][] = await res.json();
-  if (rows.length < 2) return null;
-
-  const [timestamp, original, statusCode] = rows[1] as [string, string, string];
-  return { timestamp, statusCode, snapshotUrl: `https://web.archive.org/web/${timestamp}/${original}` };
 }

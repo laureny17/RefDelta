@@ -1,4 +1,4 @@
-import type { LinkDiff } from './linkDiff';
+import type { LinkDiff, LinkDiffPhase } from './linkDiff';
 import type { DifferMetrics } from './metrics';
 import type { PageContent } from './parse/extract';
 import type { Snapshot } from './wayback';
@@ -13,6 +13,7 @@ export interface Analysis {
   differMetrics?: DifferMetrics[]; // each differ run on (snapshot, live page); undefined = not done yet
   metricsError?: string; // e.g. snapshot HTML couldn't be fetched
   linksToLookUp?: string[]; // the L1 links we'll look up snapshots for (capped; see MAX_LINKS)
+  linkPhases?: Record<string, LinkPhase>; // keyed by link URL: the step each link is on; missing = not started (waiting for a rate-limit slot)
   linkLookups?: Record<string, LinkLookup>; // keyed by link URL; missing = not looked up yet
   linkLookupsStopped?: string; // why link lookups stopped early (e.g. Wayback rate limit)
   linkDiffs?: Record<string, LinkDiff>; // keyed by link URL, for links with a snapshot; missing = not diffed (yet)
@@ -29,6 +30,12 @@ export interface Times {
   differs?: number; // running every differ (see differMetrics for each one's breakdown)
   linkLookups?: number; // first L1 lookup started -> latest lookup/diff finished (incl. waiting for slots); updates as it runs
 }
+
+// the step one L1 link is on. stays at the last step started, so a result in linkLookups/linkDiffs
+// (or linkLookupsStopped) takes precedence over it
+export type LinkPhase =
+  | 'lookingUp' // CDX request for its latest snapshot sent (or about to be, within its slot)
+  | LinkDiffPhase; // checking the live page / downloading the snapshot (see lib/linkDiff.ts)
 
 // result of looking up one L1 link's latest snapshot
 export type LinkLookup =

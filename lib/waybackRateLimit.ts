@@ -1,5 +1,5 @@
 // all requests to the Wayback Machine go through waybackFetch(), which:
-//   1. runs them one at a time, at least MIN_INTERVAL_MS apart, and
+//   1. sends them at least MIN_INTERVAL_MS apart (without waiting for earlier responses, so several can be in flight), and
 //   2. on a 429 ("too many requests"), stops ALL Wayback requests until a saved "blocked until" time
 //      TODO: look into ways to get past this?? quite slow
 //
@@ -37,44 +37,48 @@ export class WaybackRateLimitedError extends Error {
   }
 }
 
-let queue: Promise<unknown> = Promise.resolve(); // tail of the request chain
 let nextSlotAt = 0; // earliest time the next Wayback request may be sent
 
 // NOTE: only call waybackFetch() from the background script; if the popup or content script also
-// called it, each would get its own separate queue and together they'd exceed the rate limit
-export function waybackFetch(url: string | URL): Promise<Response> {
-  const request = queue.then(async () => {
-    await waitForSlot();
-    await throwIfPaused();
-    let res: Response;
-    try {
-      res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'TimeoutError') {
-        throw new Error(`Wayback request timed out after ${TIMEOUT_MS / 1000}s`);
-      }
-      throw err; // e.g. network error
+// called it, each would get its own separate clock and together they'd exceed the rate limit
+// `onSent`: called once the request is sent, i.e. after waiting for its slot (e.g. to show progress)
+export async function waybackFetch(url: string | URL, onSent: () => void = () => {}): Promise<Response> {
+  await waitForSlot();
+  await throwIfPaused();
+  let res: Response;
+  try {
+    const pending = fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    onSent(); // after starting the request, so whatever onSent does doesn't delay sending it
+    res = await pending;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new Error(`Wayback request timed out after ${TIMEOUT_MS / 1000}s`);
     }
-    if (res.status === 429) throw await pauseForRateLimit(res);
-    return res;
-  });
-  queue = request.catch(() => {}); // a failed request shouldn't break the chain for the next one
-  return request;
+    throw err; // e.g. network error
+  }
+  if (res.status === 429) throw await pauseForRateLimit(res);
+  return res;
 }
 
-// wait for the next send slot: ALL Wayback requests (this queue, concurrent lookups, every tab)
-// share one clock, so sends are always at least MIN_INTERVAL_MS apart. doesn't wait for earlier
-// responses, so concurrent callers can have several requests in flight
-// (call it right before each send, one at a time; reserving many slots ahead would hold up later runs)
-export async function waitForSlot() {
+// wait until a request sent now wouldn't have to wait for a slot. doesn't reserve one: for callers that start
+// many requests (e.g. L1 lookups), so they start one per slot instead of all at once. starting them all at once
+// would still be paced, but would reserve slots far ahead, holding up other runs' requests and sending
+// requests for runs that are already outdated
+// re-checks after each sleep, since another request (e.g. a snapshot download) may have taken the slot meanwhile
+export async function waitForFreeSlot() {
+  while (nextSlotAt > Date.now()) await sleep(nextSlotAt - Date.now());
+}
+
+// wait for the next send slot: ALL Wayback requests (every caller, every tab) share one clock,
+// so sends are always at least MIN_INTERVAL_MS apart
+async function waitForSlot() {
   const slot = Math.max(Date.now(), nextSlotAt);
   nextSlotAt = slot + MIN_INTERVAL_MS;
   await sleep(slot - Date.now());
 }
 
 // if we're still paused from an earlier 429, throw right away instead of sending the request
-// (exported so any code that requests Wayback directly can respect the pause too)
-export async function throwIfPaused() {
+async function throwIfPaused() {
   const stored = await browser.storage.local.get(BLOCKED_UNTIL_KEY);
   const blockedUntil = stored[BLOCKED_UNTIL_KEY] as number | undefined;
   if (blockedUntil && Date.now() < blockedUntil) throw new WaybackRateLimitedError(blockedUntil);
@@ -82,7 +86,7 @@ export async function throwIfPaused() {
 
 // on a 429: save the "blocked until" time (so every later request, including after a browser
 // restart, fails fast via throwIfPaused) and return the error to throw
-export async function pauseForRateLimit(res: Response): Promise<WaybackRateLimitedError> {
+async function pauseForRateLimit(res: Response): Promise<WaybackRateLimitedError> {
   const blockedUntil = Date.now() + retryAfterMs(res);
   await browser.storage.local.set({ [BLOCKED_UNTIL_KEY]: blockedUntil });
   return new WaybackRateLimitedError(blockedUntil);

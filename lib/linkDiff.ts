@@ -11,7 +11,7 @@
 
 import { measureDiffers, measureSimilarity, type DifferMetrics, type SimilarityMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
-import { WaybackRateLimitedError } from './waybackQueue';
+import { WaybackRateLimitedError } from './waybackRateLimit';
 
 // the strategy to use for diffing L1 links
 export const L1_STRATEGY: 'full' | 'similarity' = 'full';
@@ -45,16 +45,28 @@ export interface LiveFetch {
   redirectedTo?: string;
 }
 
+// the step diffLink is on, for showing progress
+export type LinkDiffPhase =
+  | 'checkingLive' // fetching the live page
+  | 'waitingToDownload' // snapshot download waiting for a rate-limit slot
+  | 'downloadingSnapshot'; // snapshot download sent to Wayback
+
 // `snapshot`: the link's latest snapshot, or null if it has none (then it's only checked for link rot)
+// `onPhase`: called as each step starts; not awaited, so e.g. saving progress doesn't delay the step or add to its time
 // throws WaybackRateLimitedError if Wayback rate-limits the snapshot fetch, so the caller can stop
-export async function diffLink(link: string, snapshot: Snapshot | null): Promise<LinkDiff> {
+export async function diffLink(
+  link: string,
+  snapshot: Snapshot | null,
+  onPhase: (phase: LinkDiffPhase) => void = () => {},
+): Promise<LinkDiff> {
   const start = performance.now();
   const durationMs = () => performance.now() - start;
 
   let live: LiveFetch;
   let liveHtml: string;
+  onPhase('checkingLive');
   try {
-    // NOT through the Wayback queue: this goes to the link's own site, so Wayback's rate limit doesn't apply
+    // NOT through waybackFetch: this goes to the link's own site, so Wayback's rate limit doesn't apply
     // (needs host_permissions for all sites; see wxt.config.ts)
     // raw HTML, before any JavaScript runs, same as the snapshot (unlike the main page, which we read after JS)
     const res = await fetch(link, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
@@ -77,8 +89,10 @@ export async function diffLink(link: string, snapshot: Snapshot | null): Promise
   }
 
   let snapshotHtml: string;
+  onPhase('waitingToDownload');
   try {
-    snapshotHtml = await fetchSnapshotHtml(snapshot); // 1 more Wayback request, through the rate-limited queue
+    // 1 more Wayback request, rate-limited by waybackFetch
+    snapshotHtml = await fetchSnapshotHtml(snapshot, () => onPhase('downloadingSnapshot'));
   } catch (err) {
     if (err instanceof WaybackRateLimitedError) throw err;
     return { error: `snapshot: ${err}`, durationMs: durationMs() };
