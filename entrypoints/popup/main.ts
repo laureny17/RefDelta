@@ -104,7 +104,7 @@ function render(analysis: Analysis | undefined) {
 // TEMPORARY: wall-clock time of each step so far (see Times in lib/analysis.ts), one row per step; "-" = not done yet
 function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis): HTMLElement {
   const linkComputeMs = Object.values(linkDiffs).reduce((sum, d) => sum + computeMs(d), 0);
-  const steps: [string, number | undefined, string, ((ms: number) => string)?][] = [
+  const steps: [string, number | undefined, string][] = [
     ['total', times.total, 'since clicking Analyze'],
     ['page', times.page, 'reading + parsing the live page'],
     ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
@@ -114,29 +114,26 @@ function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis)
     // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
     ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
     // leaves out network time (which varies run to run), so it's the number to compare L1_STRATEGY 'full' vs 'similarity' with
-    ['L1 diff computing', linkComputeMs, 'parse + diff + similarity for every L1 link and algorithm, added up', millis],
+    ['L1 diff computing', linkComputeMs, 'parse + diff + similarity for every L1 link and algorithm, added up'],
   ];
   const section = document.createElement('div');
   section.className = 'times';
   const heading = document.createElement('h3');
   heading.textContent = 'Time';
   const table = document.createElement('table');
-  for (const [name, ms, description, format = seconds] of steps) {
+  for (const [name, ms, description] of steps) {
     const row = table.insertRow();
     row.insertCell().textContent = name;
-    row.insertCell().textContent = ms === undefined ? '-' : format(ms);
+    row.insertCell().textContent = ms === undefined ? '-' : duration(ms);
     row.insertCell().textContent = description;
   }
   section.append(heading, table);
   return section;
 }
 
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(ms < 1000 ? 2 : 1)}s`;
-}
-
-function millis(ms: number): string {
-  return `${ms.toFixed(1)} ms`;
+// every time shown in the popup: ms under 1s, s from 1s up
+function duration(ms: number): string {
+  return ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(1)} s`;
 }
 
 // time spent computing for one link (parse + diff + similarity, all algorithms), without network time
@@ -160,13 +157,13 @@ function linkItem(link: string, analysis: Analysis): (string | Node)[] {
   } else if (!lookup) {
     status = [lookupProgress(link, analysis)];
   } else if ('error' in lookup) {
-    status = [`lookup failed: ${lookup.error} (${lookup.durationMs.toFixed(0)}ms)`];
+    status = [`lookup failed: ${lookup.error} (${duration(lookup.durationMs)})`];
   } else if (!lookup.snapshot) {
-    status = [`no snapshot (${lookup.durationMs.toFixed(0)}ms) — `, linkDiffStatus(link, analysis)];
+    status = [`no snapshot (${duration(lookup.durationMs)}) — `, linkDiffStatus(link, analysis)];
   } else {
     status = [
       snapshotLink(lookup.snapshot),
-      ` (${statusLabel(lookup.snapshot.statusCode)}, ${lookup.durationMs.toFixed(0)}ms) — `,
+      ` (${statusLabel(lookup.snapshot.statusCode)}, ${duration(lookup.durationMs)}) — `,
       linkDiffStatus(link, analysis),
     ];
   }
@@ -211,7 +208,7 @@ function linkDiffStatus(link: string, analysis: Analysis): string {
       : `${m.algorithm} ${(m.similarity * 100).toFixed(1)}%${m.label ? ` (${m.label})` : ''}`,
   );
   // (total time incl. network, time spent computing only)
-  return `${results.join(' · ')}${redirect} (${seconds(diff.durationMs)} total, ${millis(computeMs(diff))} computing)`;
+  return `${results.join(' · ')}${redirect} (${duration(diff.durationMs)} total, ${duration(computeMs(diff))} computing)`;
 }
 
 // one image in the list: its URL, then its alt text (if any)
@@ -257,7 +254,7 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
       continue;
     }
     for (const ms of [r.timings.parseMs, r.timings.diffMs, r.timings.similarityMs]) {
-      row.insertCell().textContent = `${ms.toFixed(1)} ms`;
+      row.insertCell().textContent = duration(ms);
     }
     row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
     row.insertCell().textContent = `${(r.similarity * 100).toFixed(1)}%`;
