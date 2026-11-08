@@ -35,14 +35,14 @@ export type DifferMetrics =
       timings: Timings; // parse / diff / similarity, in ms
       sizeBytes: number; // size of the diff as JSON
       similarity: number; // 0-1, from the differ's computeSimilarity
-      label?: string; // classifier output; undefined = no classifier yet
+      label: string; // classifier output (unchanged / minor / major)
       preview: PreviewRun[]; // what changed, shortened for display
     }
   | { algorithm: string; error: string };
 
 // like DifferMetrics, but from Differ.similarity(): no diff, so no diff time / size / preview
 export type SimilarityMetrics =
-  | { algorithm: string; timings: Omit<Timings, 'diffMs'>; similarity: number; label?: string }
+  | { algorithm: string; timings: Omit<Timings, 'diffMs'>; similarity: number; label: string }
   | { algorithm: string; error: string };
 
 // for L0: each strategy's L0 differ (full diff + similarity)
@@ -55,7 +55,7 @@ export function measureL0Diffs(snapshotHtml: string, liveHtml: string): DifferMe
         timings,
         sizeBytes: diff.stats.sizeBytes,
         similarity,
-        label: classification?.label,
+        label: classification.label,
         preview: differ.preview(diff),
       };
     } catch (err) {
@@ -69,7 +69,7 @@ export function measureL1Similarities(snapshotHtml: string, liveHtml: string): S
   return L1_DIFFERS.map((differ) => {
     try {
       const { similarity, classification, timings } = differ.similarity(snapshotHtml, liveHtml);
-      return { algorithm: differ.name, timings, similarity, label: classification?.label };
+      return { algorithm: differ.name, timings, similarity, label: classification.label };
     } catch (err) {
       return { algorithm: differ.name, error: `${err}` };
     }

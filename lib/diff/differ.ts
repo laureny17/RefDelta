@@ -5,12 +5,13 @@ DiffResult
 
 import type {  Classification,
     Classifier} from "../classify/classify-interface";
+import { ThresholdClassifier } from "../classify/threshold";
 import type { PreviewRun } from "./preview";
 
 export interface CompareResult<D = unknown> {
     diff: DiffResult<D>;
     similarity: number; // from computeSimilarity: 1 = identical, 0 = nothing in common
-    classification?: Classification; // undefined if this differ has no classifier
+    classification: Classification;
     timings: Timings;
 }
 
@@ -24,7 +25,7 @@ export interface Timings {
 // what similarity() returns: just the score, no diff
 export interface SimilarityResult {
     similarity: number; // 1 = identical, 0 = nothing in common
-    classification?: Classification; // undefined if this differ has no classifier
+    classification: Classification;
     timings: Omit<Timings, "diffMs">;
 }
 
@@ -32,7 +33,8 @@ export interface SimilarityResult {
 export abstract class Differ<R extends Representation, D = unknown> {
     abstract readonly name: string;
 
-    constructor(protected classifier?: Classifier) {}
+    // by default, the general classifier. an algorithm can pass its own, e.g. with thresholds calibrated for its scores
+    constructor(protected classifier: Classifier = new ThresholdClassifier()) {}
 
     protected abstract parse(html: string): R;
 
@@ -60,7 +62,7 @@ export abstract class Differ<R extends Representation, D = unknown> {
         const similarity = this.computeSimilarity(oldRep, newRep, diff);
         const t3 = performance.now();
 
-        const classification = this.classifier?.classify(similarity);
+        const classification = this.classifier.classify(similarity);
         const timings = { parseMs: t1 - t0, diffMs: t2 - t1, similarityMs: t3 - t2 };
 
         return { diff, similarity, classification, timings };
@@ -78,7 +80,7 @@ export abstract class Differ<R extends Representation, D = unknown> {
         const similarity = this.computeSimilarity(oldRep, newRep);
         const t2 = performance.now();
 
-        const classification = this.classifier?.classify(similarity);
+        const classification = this.classifier.classify(similarity);
 
         return { similarity, classification, timings: { parseMs: t1 - t0, similarityMs: t2 - t1 } };
     }
