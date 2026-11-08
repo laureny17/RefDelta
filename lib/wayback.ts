@@ -16,9 +16,10 @@ export interface Snapshot {
 //  - flag 404s?
 // the raw archived HTML of a snapshot: the "id_" flag returns the page as originally captured,
 // without the Wayback toolbar or Wayback's rewritten links
-export async function fetchSnapshotHtml(snapshot: Snapshot): Promise<string> {
+// `onSent`: called once the request is sent (after waiting for a rate-limit slot; see waybackFetch)
+export async function fetchSnapshotHtml(snapshot: Snapshot, onSent?: () => void): Promise<string> {
   const rawUrl = snapshot.snapshotUrl.replace(`/web/${snapshot.timestamp}/`, `/web/${snapshot.timestamp}id_/`);
-  const res = await waybackFetch(rawUrl); // paced + pauses on 429, like CDX lookups
+  const res = await waybackFetch(rawUrl, onSent); // paced + pauses on 429, like CDX lookups
   if (!res.ok) throw new Error(`snapshot fetch failed: ${res.status}`);
   return res.text();
 }

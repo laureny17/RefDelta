@@ -48,7 +48,8 @@ export interface LiveFetch {
 // the step diffLink is on, for showing progress
 export type LinkDiffPhase =
   | 'checkingLive' // fetching the live page
-  | 'downloadingSnapshot'; // fetching the snapshot's HTML from Wayback (may first wait for a rate-limit slot)
+  | 'waitingToDownload' // snapshot download waiting for a rate-limit slot
+  | 'downloadingSnapshot'; // snapshot download sent to Wayback
 
 // `snapshot`: the link's latest snapshot, or null if it has none (then it's only checked for link rot)
 // `onPhase`: called as each step starts; not awaited, so e.g. saving progress doesn't delay the step or add to its time
@@ -88,9 +89,10 @@ export async function diffLink(
   }
 
   let snapshotHtml: string;
-  onPhase('downloadingSnapshot');
+  onPhase('waitingToDownload');
   try {
-    snapshotHtml = await fetchSnapshotHtml(snapshot); // 1 more Wayback request, rate-limited by waybackFetch
+    // 1 more Wayback request, rate-limited by waybackFetch
+    snapshotHtml = await fetchSnapshotHtml(snapshot, () => onPhase('downloadingSnapshot'));
   } catch (err) {
     if (err instanceof WaybackRateLimitedError) throw err;
     return { error: `snapshot: ${err}`, durationMs: durationMs() };

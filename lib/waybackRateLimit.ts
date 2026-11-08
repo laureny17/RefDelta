@@ -41,12 +41,15 @@ let nextSlotAt = 0; // earliest time the next Wayback request may be sent
 
 // NOTE: only call waybackFetch() from the background script; if the popup or content script also
 // called it, each would get its own separate clock and together they'd exceed the rate limit
-export async function waybackFetch(url: string | URL): Promise<Response> {
+// `onSent`: called once the request is sent, i.e. after waiting for its slot (e.g. to show progress)
+export async function waybackFetch(url: string | URL, onSent: () => void = () => {}): Promise<Response> {
   await waitForSlot();
   await throwIfPaused();
   let res: Response;
   try {
-    res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const pending = fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    onSent(); // after starting the request, so whatever onSent does doesn't delay sending it
+    res = await pending;
   } catch (err) {
     if (err instanceof DOMException && err.name === 'TimeoutError') {
       throw new Error(`Wayback request timed out after ${TIMEOUT_MS / 1000}s`);
