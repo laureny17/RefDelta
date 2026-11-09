@@ -1,0 +1,221 @@
+{
+  "id": "mit-news-001",
+  "url": "https://news.mit.edu/",
+  "old": {
+    "timestamp": "20240101000000",
+    "file": "html/mit-news-001/old.html"
+  },
+  "new": {
+    "timestamp": "20240201000000",
+    "file": "html/mit-news-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "house-of-north",
+  "url": "http://www.houseofnorth.com/",
+  "old": {
+    "timestamp": "20050211221026",
+    "file": "html/house-of-north/old.html"
+  },
+  "new": {
+    "timestamp": "20220128194809",
+    "file": "html/house-of-north/new.html"
+  },
+  "change_type": "404"  // does a 1001 error count as a 404?
+}
+{
+  "id": "google",
+  "url": "http://www.google.com/",
+  "old": {
+    "timestamp": "20261107182823",
+    "file": "html/google/old.html"
+  },
+  "new": {
+    "timestamp": "20261108191348",
+    "file": "html/google/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "youtube",
+  "url": "http://www.youtube.com/?themeRefresh=1",
+  "old": {
+    "timestamp": "20261106130833",
+    "file": "html/youtube/old.html"
+  },
+  "new": {
+    "timestamp": "20261107133403",
+    "file": "html/youtube/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "youtube",
+  "url": "http://www.youtube.com/?themeRefresh=1",
+  "old": {
+    "timestamp": "20261106130833",
+    "file": "html/youtube/old.html"
+  },
+  "new": {
+    "timestamp": "20261107133403",
+    "file": "html/youtube/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "facebook-001",
+  "url": "https://facebook.com",
+  "old": {
+    "timestamp": "20221109000746",
+    "file": "html/facebook-001/old.html"
+  },
+  "new": {
+    "timestamp": "20221110000911",
+    "file": "html/facebook-001/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "instagram-001",
+  "url": "https://instagram.com",
+  "old": {
+    "timestamp": "20041126153114",
+    "file": "html/instagram-001/old.html"
+  },
+  "new": {
+    "timestamp": "20261109013039",
+    "file": "html/instagram-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "wikipedia-001",
+  "url": "https://wikipedia.org",
+  "old": {
+    "timestamp": "20030410015710",
+    "file": "html/wikipedia-001/old.html"
+  },
+  "new": {
+    "timestamp": "20261107050423",
+    "file": "html/wikipedia-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "wikipedia-002",
+  "url": "https://wikipedia.org",
+  "old": {
+    "timestamp": "20030410015710",
+    "file": "html/wikipedia-002/old.html"
+  },
+  "new": {
+    "timestamp": "20030804043758",
+    "file": "html/wikipedia-002/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "linkedin-001",
+  "url": "https://linkedin.com",
+  "old": {
+    "timestamp": "20051015052818",
+    "file": "html/linkedin-001/old.html"
+  },
+  "new": {
+    "timestamp": "20261108234618",
+    "file": "html/linkedin-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "linkedin-002",
+  "url": "https://linkedin.com",
+  "old": {
+    "timestamp": "20051015052818",
+    "file": "html/linkedin-002/old.html"
+  },
+  "new": {
+    "timestamp": "20051026102139",
+    "file": "html/linkedin-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "archiveofourown-001",
+  "url": "http://archiveofourown.org/",
+  "old": {
+    "timestamp": "20190701001322",
+    "file": "html/archiveofourown-001/old.html"
+  },
+  "new": {
+    "timestamp": "20230501001132",
+    "file": "html/archiveofourown-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "archiveofourown-002",
+  "url": "http://archiveofourown.org/",
+  "old": {
+    "timestamp": "20230501001132",
+    "file": "html/archiveofourown-002/old.html"
+  },
+  "new": {
+    "timestamp": "20230502003200",
+    "file": "html/archiveofourown-002/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "tumblr-001",
+  "url": "https://tumblr.com",
+  "old": {
+    "timestamp": "20090801185049",
+    "file": "html/tumblr-001/old.html"
+  },
+  "new": {
+    "timestamp": "20210101000322",
+    "file": "html/tumblr-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "netflix-001",
+  "url": "https://netflix.com",
+  "old": {
+    "timestamp": "20250901015629",
+    "file": "html/netflix-001/old.html"
+  },
+  "new": {
+    "timestamp": "20250902071710",
+    "file": "html/netflix-001/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "netflix-002",
+  "url": "https://netflix.com",
+  "old": {
+    "timestamp": "20170525032820",
+    "file": "html/netflix-002/old.html"
+  },
+  "new": {
+    "timestamp": "20250902071710",
+    "file": "html/netflix-002/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "wayback-cdx-docs-001",
+  "url": "https://archive.org/developers/wayback-cdx-server.html",
+  "old": {
+    "timestamp": "20240821204354",
+    "file": "html/wayback-cdx-docs-001/old.html"
+  },
+  "new": {
+    "timestamp": "20261003010503",
+    "file": "html/wayback-cdx-docs-001/new.html"
+  },
+  "change_type": "404"
+}
