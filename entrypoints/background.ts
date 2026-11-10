@@ -2,7 +2,7 @@ import { analysisKey, type Analysis, type LinkLookup, type Times } from '@/lib/a
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { measureL0Diffs } from '@/lib/metrics';
-import { fetchSnapshotHtml, findLatestSnapshot, type Snapshot } from '@/lib/wayback';
+import { fetchSnapshotHtml, findSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
 // max number of L1 links to look up per page (pretty arbitrarily chosen for now)
@@ -19,7 +19,10 @@ let nextRunId = 0;
 export default defineBackground(() => {
   // listen for message from the popup to trigger analysis
   browser.runtime.onMessage.addListener((msg) => {
-    if (msg.type === 'analyze-tab') analyzeTab(msg.tabId);
+    if (msg.type === 'analyze-tab') {
+      const date = typeof msg.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(msg.date) ? msg.date : undefined;
+      analyzeTab(msg.tabId, date);
+    }
   });
 
   // clear a tab's results when it loads a new page (or reloads), so the popup doesn't show prev page results
@@ -40,7 +43,7 @@ function clearTab(tabId: number) {
 // analyze a single tab, saving results to storage.session as they become available
 // TEMPORARY: using storage.session for now;
 // TODO: replace/complement with IndexedDB
-async function analyzeTab(tabId: number) {
+async function analyzeTab(tabId: number, requestedDate?: string) {
   const key = analysisKey(tabId);
   const runId = ++nextRunId;
   currentRun.set(tabId, runId);
@@ -54,7 +57,7 @@ async function analyzeTab(tabId: number) {
   const times: Times = {};
 
   // accumulated results; each update merges in new fields and re-saves the whole thing
-  const analysis: Analysis = { times };
+  const analysis: Analysis = { times, requestedDate };
   const update = async (changes: Partial<Analysis>) => {
     Object.assign(analysis, changes);
     times.total = performance.now() - start;
@@ -76,10 +79,12 @@ async function analyzeTab(tabId: number) {
   }
   await update({ livePage }); // links ready; snapshot still pending
 
-  // try to find the latest Wayback snapshot for the page
+  // Find either the latest L0 snapshot or the one closest to the requested date. Noon makes a
+  // date-only selection neutral with respect to captures earlier/later on that calendar day.
   let snapshot: Snapshot | null = null;
   try {
-    snapshot = await timed(times, 'snapshotLookup', () => findLatestSnapshot(livePage.url));
+    const targetTimestamp = requestedDate ? `${requestedDate.replaceAll('-', '')}120000` : undefined;
+    snapshot = await timed(times, 'snapshotLookup', () => findSnapshot(livePage.url, targetTimestamp));
     await update({ snapshot });
   } catch (err) {
     await update({ snapshotError: `${err}` });
@@ -96,12 +101,13 @@ async function analyzeTab(tabId: number) {
     }
   }
 
-  // look up the latest snapshot of each L1 link, then diff the ones that have one (see lib/linkDiff.ts)
+  // Anchor every L1 lookup to the actual L0 capture so all archived pages are from as close to
+  // the same moment as Wayback can provide.
   const linksToLookUp = livePage.links.slice(0, MAX_LINKS);
   linksStart = performance.now();
   await update({ linksToLookUp, linkLookups: {}, linkDiffs: {} });
 
-  await analyzeLinks(linksToLookUp, analysis, update, isCurrent);
+  await analyzeLinks(linksToLookUp, snapshot?.timestamp, analysis, update, isCurrent);
 }
 
 // run `fn`, recording how long it took (wall-clock) in times[step], even if it throws
@@ -139,6 +145,7 @@ async function diffAndSave(
 // waybackFetch, which paces lookups (24/min) and snapshot downloads (~456/min) on separate clocks (see waybackRateLimit.ts)
 async function analyzeLinks(
   linksToLookUp: string[],
+  targetTimestamp: string | undefined,
   analysis: Analysis,
   update: (changes: Partial<Analysis>) => Promise<void>,
   isCurrent: () => boolean,
@@ -153,7 +160,7 @@ async function analyzeLinks(
       // not awaited: the lookup has to take its rate-limit slot right away, or the loop below would see the
       // slot still free and start more lookups while this save is in progress
       void update({ linkPhases: { ...analysis.linkPhases, [link]: 'lookingUp' } });
-      const snapshot = await findLatestSnapshot(link);
+      const snapshot = await findSnapshot(link, targetTimestamp);
       result = { snapshot, durationMs: performance.now() - startTime };
     } catch (err) {
       const durationMs = performance.now() - startTime;

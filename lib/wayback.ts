@@ -9,8 +9,8 @@ export interface Snapshot {
   snapshotUrl: string; // viewable archived page
 }
 
-// returns the most recent snapshot of `url`, or null if the Wayback Machine has none
-// TODO: support "closest to a user-specified date" (CDX `closest` param)
+// returns the snapshot of `url` closest to `timestamp`, or the most recent one when no
+// timestamp is supplied. `timestamp` uses Wayback's "YYYYMMDDhhmmss" format.
 // TODO: how to handle non-200 archive captures?
 //  - fall back to the latest 200 for content comparison (filter=statuscode:200)?
 //  - flag 404s?
@@ -24,11 +24,17 @@ export async function fetchSnapshotHtml(snapshot: Snapshot, onSent?: () => void)
   return res.text();
 }
 
-export async function findLatestSnapshot(url: string): Promise<Snapshot | null> {
+export async function findSnapshot(url: string, targetTimestamp?: string): Promise<Snapshot | null> {
   const query = new URL('https://web.archive.org/cdx/search/cdx');
   query.searchParams.set('url', url);
   query.searchParams.set('output', 'json');
-  query.searchParams.set('limit', '-1'); // negative limit = last N results, i.e. -1 = most recent
+  if (targetTimestamp) {
+    query.searchParams.set('closest', targetTimestamp);
+    query.searchParams.set('sort', 'closest');
+    query.searchParams.set('limit', '1');
+  } else {
+    query.searchParams.set('limit', '-1'); // negative limit = last N results, i.e. -1 = most recent
+  }
   query.searchParams.set('fl', 'timestamp,original,statuscode'); // fields to return in the response
 
   const res = await waybackFetch(query, 'lookup'); // paced + pauses on 429; see waybackRateLimit.ts

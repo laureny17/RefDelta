@@ -44,7 +44,8 @@ export type LinkDiffPhase =
   | 'waitingToDownload' // snapshot download waiting for a rate-limit slot
   | 'downloadingSnapshot'; // snapshot download sent to Wayback
 
-// `snapshot`: the link's latest snapshot, or null if it has none (then it's only checked for link rot)
+// `snapshot`: the link's snapshot closest to its L0 page's snapshot, or null if it has none
+// (then it's only checked for link rot)
 // `onPhase`: called as each step starts; not awaited, so e.g. saving progress doesn't delay the step or add to its time
 // throws WaybackRateLimitedError if Wayback rate-limits the snapshot fetch, so the caller can stop
 export async function diffLink(

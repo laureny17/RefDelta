@@ -33,11 +33,14 @@ interface LinkStatus {
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <h1>RefDelta</h1>
+  <label for="snapshot-date">Compare against date (optional)</label>
+  <input id="snapshot-date" type="date">
   <button id="analyze" type="button">Analyze this page</button>
   <div id="output"></div>
 `;
 
 const output = document.querySelector<HTMLDivElement>('#output')!;
+const dateInput = document.querySelector<HTMLInputElement>('#snapshot-date')!;
 
 // display of results in popup is a TEMPORARY feature
 // background script does the work and saves results to storage.session -> closing the popup doesn't stop analysis
@@ -58,11 +61,13 @@ browser.storage.session.onChanged.addListener((changes) => {
 
 document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click', () => {
   output.textContent = 'Analyzing...';
-  browser.runtime.sendMessage({ type: 'analyze-tab', tabId });
+  browser.runtime.sendMessage({ type: 'analyze-tab', tabId, date: dateInput.value || undefined });
 });
 
 function render(analysis: Analysis | undefined) {
   if (!analysis) return; // not analyzed yet
+  // Don't overwrite a date while the user is editing it as background progress re-renders.
+  if (document.activeElement !== dateInput) dateInput.value = analysis.requestedDate ?? '';
   if (analysis.error) {
     output.textContent = analysis.error;
     return;
@@ -187,7 +192,7 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
     // a lookup that was in flight when lookups stopped has its result dropped (see analyzeLinks in background.ts)
     if (stopped) return { label: 'stopped', details: [phase ? 'lookup sent, result dropped when lookups stopped' : 'lookups stopped before its turn'] };
     return phase
-      ? { label: 'looking up', details: ['asking Wayback for its latest snapshot'] }
+      ? { label: 'looking up', details: ['asking Wayback for the snapshot closest to the L0 snapshot'] }
       : { label: 'waiting: lookup', details: ['waiting for a rate-limit slot to look up its snapshot'] };
   }
   if ('error' in lookup) return { label: 'failed', details: [`snapshot lookup failed: ${lookup.error} (${duration(lookup.durationMs)})`] };
@@ -315,16 +320,20 @@ function plainLink(link: string): HTMLAnchorElement {
   return a;
 }
 
-function snapshotLine({ snapshot, snapshotError }: Analysis): HTMLParagraphElement {
+function snapshotLine({ snapshot, snapshotError, requestedDate }: Analysis): HTMLParagraphElement {
   const el = document.createElement('p');
   if (snapshotError) {
     el.textContent = `Snapshot lookup failed: ${snapshotError}`;
   } else if (snapshot === undefined) {
     el.textContent = 'Looking up Wayback snapshot...';
   } else if (snapshot === null) {
-    el.textContent = 'No Wayback snapshot found';
+    el.textContent = requestedDate ? `No Wayback snapshot found near ${requestedDate}` : 'No Wayback snapshot found';
   } else {
-    el.append('Latest snapshot: ', snapshotLink(snapshot), ` (${statusLabel(snapshot.statusCode)})`);
+    el.append(
+      requestedDate ? `Snapshot closest to ${requestedDate}: ` : 'Latest snapshot: ',
+      snapshotLink(snapshot),
+      ` (${statusLabel(snapshot.statusCode)})`,
+    );
   }
   return el;
 }

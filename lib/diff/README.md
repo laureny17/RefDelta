@@ -2,7 +2,7 @@
 
 **L0** = the page being analyzed; **L1** = the links on it.
 
-Each diff algorithm ("differ") compares a page's Wayback snapshot to its live version. Every differ is one class in its own file, extending `Differ` (`differ.ts`). Differs are grouped into **strategies** (`DiffStrategy` in `lib/metrics.ts`): one differ for L0 and one for each L1 link (usually the same one). The extension runs every strategy on the same pages and shows their results side by side in the popup, so we can compare algorithms.
+Each diff algorithm ("differ") compares a page's Wayback snapshot to its live version. The L0 page uses its latest snapshot or the snapshot closest to a user-selected date; each L1 link uses the snapshot closest to that L0 snapshot's timestamp. Every differ is one class in its own file, extending `Differ` (`differ.ts`). Differs are grouped into **strategies** (`DiffStrategy` in `lib/metrics.ts`): one differ for L0 and one for each L1 link (usually the same one). The extension runs every strategy on the same pages and shows their results side by side in the popup, so we can compare algorithms.
 
 `myers.ts` is the baseline, usable as a reference when adding a new one.
 

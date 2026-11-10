@@ -2,8 +2,8 @@
 
 ## lib/wayback.ts
 
-- CDX lookup via findLatestSnapshot()
-  - asks Wayback for the most recent snapshot of a URL; returns { timestamp, statusCode, snapshotUrl }, or null if there's no snapshot
+- CDX lookup via findSnapshot()
+  - asks Wayback for the most recent snapshot of a URL, or the snapshot closest to a supplied timestamp; returns { timestamp, statusCode, snapshotUrl }, or null if there's no snapshot
 - Snapshot download via fetchSnapshotHtml()
   - downloads the raw archived HTML (the id_ flag in the URL means "as originally captured", without Wayback's toolbar)
 - ^^ both requests are through waybackFetch(), defined in lib/waybackRateLimit.ts
@@ -39,9 +39,9 @@
 
 - The whole pipeline, in order, run when you click Analyze (analyzeTab())
   1. Asks the content script (entrypoints/content.ts) for the open page: parsed content (extract()) + its full HTML
-  2. CDX lookup for the page (findLatestSnapshot())
+  2. CDX lookup for the page (findSnapshot()): gets the latest snapshot, or the snapshot closest to the optional date selected in the popup
   3. Snapshot download (fetchSnapshotHtml()), then runs each strategy's L0 differ on (snapshot, live page) (measureL0Diffs() in lib/metrics.ts)
-  4. For the first MAX_LINKS (50; TODO: get rid of cap entirely) links on the page (analyzeLinks()): starts one lookup per free lookup slot; each link whose lookup succeeded (even if it found no snapshot) goes through diffLink()
+  4. For the first MAX_LINKS (50; TODO: get rid of cap entirely) links on the page (analyzeLinks()): finds each link's snapshot closest to the actual L0 snapshot timestamp, starts one lookup per free lookup slot, and sends each successful lookup (even if it found no snapshot) through diffLink()
 - After every step, saves results to storage.session (update()) (TODO: use IndexedDB); the popup redraws whenever they change; analysis keeps going if the popup is closed
 - The shape of the saved results is Analysis in lib/analysis.ts
 
