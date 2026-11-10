@@ -15,6 +15,7 @@ export default defineContentScript({
         console.log('[RefDelta]', content); // full parse output (blocks, text, links, ...) for debugging
         // + the page's HTML, for diffing against its snapshot (not stored; see background.ts)
         sendResponse({ ...content, html: document.documentElement.outerHTML });
+        return true; // keep message channel open for sendResponse
       }
     });
   },

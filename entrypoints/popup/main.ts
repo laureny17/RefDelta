@@ -43,8 +43,17 @@ const output = document.querySelector<HTMLDivElement>('#output')!;
 // background script does the work and saves results to storage.session -> closing the popup doesn't stop analysis
 // TEMPORARY: using storage.session for now;
 // TODO: replace/complement with IndexedDB
-const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-const tabId = tab!.id!;
+
+// Check if tab ID is provided in URL (for programmatic access, e.g. from benchmark)
+const urlParams = new URLSearchParams(window.location.search);
+const tabIdFromUrl = urlParams.get('tab');
+let tabId: number;
+if (tabIdFromUrl) {
+  tabId = parseInt(tabIdFromUrl, 10);
+} else {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  tabId = tab!.id!;
+}
 const key = analysisKey(tabId);
 
 // show any results from an earlier run of the same page on this tab
