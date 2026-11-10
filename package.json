@@ -12,17 +12,24 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "benchmark:simple": "tsx benchmark/simple.ts",
+    "benchmark:dataset": "tsx benchmark/dataset.ts",
+    "benchmark:playwright": "tsx benchmark/playwright.ts",
+    "benchmark:fetch": "tsx benchmark/fetch-dataset.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "playwright": "^1.65.0",
     "typescript": "^5.9.3",
     "vite": "^8.1.5",
     "web-ext": "^10.5.0",
     "wxt": "^0.21.3"
   },
   "dependencies": {
-    "idb": "^8.0.4",
     "diff": "^9.0.0",
-    "linkedom": "^0.18.15"
+    "idb": "^8.0.4",
+    "linkedom": "^0.18.15",
+    "tsx": "^4.23.15"
   }
 }
