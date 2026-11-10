@@ -39,7 +39,7 @@
 
 - The whole pipeline, in order, run when you click Analyze (analyzeTab())
   1. Asks the content script (entrypoints/content.ts) for the open page: parsed content (extract()) + its full HTML
-  2. CDX lookup for the page (findSnapshot())
+  2. CDX lookup for the page (findSnapshot()): gets the latest snapshot, or the snapshot closest to the optional date selected in the popup
   3. Snapshot download (fetchSnapshotHtml()), then runs each strategy's L0 differ on (snapshot, live page) (measureL0Diffs() in lib/metrics.ts)
   4. For the first MAX_LINKS (50; TODO: get rid of cap entirely) links on the page (analyzeLinks()): finds each link's snapshot closest to the actual L0 snapshot timestamp, starts one lookup per free lookup slot, and sends each successful lookup (even if it found no snapshot) through diffLink()
 - After every step, saves results to storage.session (update()) (TODO: use IndexedDB); the popup redraws whenever they change; analysis keeps going if the popup is closed

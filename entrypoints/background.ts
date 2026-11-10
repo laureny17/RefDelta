@@ -19,7 +19,10 @@ let nextRunId = 0;
 export default defineBackground(() => {
   // listen for message from the popup to trigger analysis
   browser.runtime.onMessage.addListener((msg) => {
-    if (msg.type === 'analyze-tab') analyzeTab(msg.tabId);
+    if (msg.type === 'analyze-tab') {
+      const date = typeof msg.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(msg.date) ? msg.date : undefined;
+      analyzeTab(msg.tabId, date);
+    }
   });
 
   // clear a tab's results when it loads a new page (or reloads), so the popup doesn't show prev page results
@@ -40,7 +43,7 @@ function clearTab(tabId: number) {
 // analyze a single tab, saving results to storage.session as they become available
 // TEMPORARY: using storage.session for now;
 // TODO: replace/complement with IndexedDB
-async function analyzeTab(tabId: number) {
+async function analyzeTab(tabId: number, requestedDate?: string) {
   const key = analysisKey(tabId);
   const runId = ++nextRunId;
   currentRun.set(tabId, runId);
@@ -54,7 +57,7 @@ async function analyzeTab(tabId: number) {
   const times: Times = {};
 
   // accumulated results; each update merges in new fields and re-saves the whole thing
-  const analysis: Analysis = { times };
+  const analysis: Analysis = { times, requestedDate };
   const update = async (changes: Partial<Analysis>) => {
     Object.assign(analysis, changes);
     times.total = performance.now() - start;
@@ -76,10 +79,12 @@ async function analyzeTab(tabId: number) {
   }
   await update({ livePage }); // links ready; snapshot still pending
 
-  // Find the latest L0 snapshot.
+  // Find either the latest L0 snapshot or the one closest to the requested date. Noon makes a
+  // date-only selection neutral with respect to captures earlier/later on that calendar day.
   let snapshot: Snapshot | null = null;
   try {
-    snapshot = await timed(times, 'snapshotLookup', () => findSnapshot(livePage.url));
+    const targetTimestamp = requestedDate ? `${requestedDate.replaceAll('-', '')}120000` : undefined;
+    snapshot = await timed(times, 'snapshotLookup', () => findSnapshot(livePage.url, targetTimestamp));
     await update({ snapshot });
   } catch (err) {
     await update({ snapshotError: `${err}` });

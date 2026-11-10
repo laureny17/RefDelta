@@ -7,6 +7,7 @@ import type { Snapshot } from './wayback';
 // fields fill in as each stage finishes
 export interface Analysis {
   error?: string; // analysis failed
+  requestedDate?: string; // YYYY-MM-DD selected by the user; undefined = latest L0 snapshot
   livePage?: PageContent; // what the content script sends back (see lib/parse/extract.ts)
   snapshot?: Snapshot | null; // undefined = lookup in progress, null = no snapshot found
   snapshotError?: string;
