@@ -187,7 +187,7 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
     // a lookup that was in flight when lookups stopped has its result dropped (see analyzeLinks in background.ts)
     if (stopped) return { label: 'stopped', details: [phase ? 'lookup sent, result dropped when lookups stopped' : 'lookups stopped before its turn'] };
     return phase
-      ? { label: 'looking up', details: ['asking Wayback for its latest snapshot'] }
+      ? { label: 'looking up', details: ['asking Wayback for the snapshot closest to the L0 snapshot'] }
       : { label: 'waiting: lookup', details: ['waiting for a rate-limit slot to look up its snapshot'] };
   }
   if ('error' in lookup) return { label: 'failed', details: [`snapshot lookup failed: ${lookup.error} (${duration(lookup.durationMs)})`] };

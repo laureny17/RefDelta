@@ -34,10 +34,10 @@ export interface Times {
 // the step one L1 link is on. stays at the last step started, so a result in linkLookups/linkDiffs
 // (or linkLookupsStopped) takes precedence over it
 export type LinkPhase =
-  | 'lookingUp' // CDX request for its latest snapshot sent (or about to be, within its slot)
+  | 'lookingUp' // CDX request for a snapshot near the L0 snapshot sent (or about to be, within its slot)
   | LinkDiffPhase; // checking the live page / downloading the snapshot (see lib/linkDiff.ts)
 
-// result of looking up one L1 link's latest snapshot
+// result of looking up one L1 link's snapshot closest to the L0 snapshot
 export type LinkLookup =
   | { snapshot: Snapshot | null; durationMs: number }
   | { error: string; durationMs: number };
