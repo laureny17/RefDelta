@@ -21,15 +21,23 @@ const LIVE_TIMEOUT_MS = 30 * 1000;
 // TODO: validate?
 const BLOCKED_STATUSES = [401, 403, 429];
 
+// Timing breakdown for L1 link analysis
+export interface LinkDiffTimings {
+  liveFetchMs: number; // time to fetch the live page
+  snapshotDownloadMs?: number; // time to download snapshot (if applicable)
+  diffMs?: number; // time to compute diff/similarity (if applicable)
+  totalMs: number; // total time for the entire operation
+}
+
 export type LinkDiff =
   // both versions fetched + compared: each L1 differ's metrics (similarity-only or full diff based on config)
-  | { live: LiveFetch; metrics: SimilarityMetrics[] | DifferMetrics[]; durationMs: number }
+  | { live: LiveFetch; metrics: SimilarityMetrics[] | DifferMetrics[]; durationMs: number; timings: LinkDiffTimings }
   // link rot: the live page is gone or the site can't be reached, so it isn't diffed
-  | { live?: LiveFetch; rot: string; durationMs: number } // no `live` if the site couldn't be reached at all
+  | { live?: LiveFetch; rot: string; durationMs: number; timings: LinkDiffTimings } // no `live` if the site couldn't be reached at all
   // live page is fine but not diffed (e.g. no snapshot, not an HTML page, blocked)
-  | { live: LiveFetch; skipped: string; durationMs: number }
+  | { live: LiveFetch; skipped: string; durationMs: number; timings: LinkDiffTimings }
   // something failed (e.g. timeout, snapshot fetch failed)
-  | { error: string; durationMs: number };
+  | { error: string; durationMs: number; timings: LinkDiffTimings };
 
 // what we got back when fetching the live page
 export interface LiveFetch {
@@ -58,9 +66,17 @@ export async function diffLink(
   const start = performance.now();
   const durationMs = () => performance.now() - start;
 
+  // Track timing for each phase
+  const timings: LinkDiffTimings = {
+    liveFetchMs: 0,
+    totalMs: 0,
+  };
+
   let live: LiveFetch;
   let liveHtml: string;
   onPhase('checkingLive');
+
+  const liveFetchStart = performance.now();
   try {
     // NOT through waybackFetch: this goes to the link's own site, so Wayback's rate limit doesn't apply
     // (needs host_permissions for all sites; see wxt.config.ts)
@@ -68,37 +84,51 @@ export async function diffLink(
     const res = await fetch(link, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
     live = { status: res.status, ...(res.redirected && { redirectedTo: res.url }) };
     const rot = rotReason(res);
-    if (rot) return { live, rot, durationMs: durationMs() };
-    if (!res.ok) return { live, skipped: `live page returned ${res.status} (probably blocking automated requests)`, durationMs: durationMs() };
-    if (!snapshot) return { live, skipped: 'no snapshot to compare against', durationMs: durationMs() };
+    timings.liveFetchMs = performance.now() - liveFetchStart;
+    timings.totalMs = durationMs();
+    if (rot) return { live, rot, durationMs: durationMs(), timings };
+    if (!res.ok) return { live, skipped: `live page returned ${res.status} (probably blocking automated requests)`, durationMs: durationMs(), timings };
+    if (!snapshot) return { live, skipped: 'no snapshot to compare against', durationMs: durationMs(), timings };
     const type = res.headers.get('Content-Type') ?? '';
-    if (!type.includes('html')) return { live, skipped: `not an HTML page (${type || 'unknown type'})`, durationMs: durationMs() };
+    if (!type.includes('html')) return { live, skipped: `not an HTML page (${type || 'unknown type'})`, durationMs: durationMs(), timings };
     liveHtml = await res.text();
+    timings.liveFetchMs = performance.now() - liveFetchStart;
   } catch (err) {
+    timings.liveFetchMs = performance.now() - liveFetchStart;
+    timings.totalMs = durationMs();
     // a timeout could just be a slow site, so it's an error rather than link rot
     if (err instanceof DOMException && err.name === 'TimeoutError') {
-      return { error: `live page timed out after ${LIVE_TIMEOUT_MS / 1000}s`, durationMs: durationMs() };
+      return { error: `live page timed out after ${LIVE_TIMEOUT_MS / 1000}s`, durationMs: durationMs(), timings };
     }
     // anything else (e.g. the domain no longer exists, connection refused): the site couldn't be reached at all
     // TODO: retry once before calling it rot?
-    return { rot: `site unreachable (${err})`, durationMs: durationMs() };
+    return { rot: `site unreachable (${err})`, durationMs: durationMs(), timings };
   }
 
   let snapshotHtml: string;
   onPhase('waitingToDownload');
+
+  const snapshotStart = performance.now();
   try {
     // 1 more Wayback request, rate-limited by waybackFetch
     snapshotHtml = await fetchSnapshotHtml(snapshot, () => onPhase('downloadingSnapshot'));
+    timings.snapshotDownloadMs = performance.now() - snapshotStart;
   } catch (err) {
+    timings.snapshotDownloadMs = performance.now() - snapshotStart;
+    timings.totalMs = durationMs();
     if (err instanceof WaybackRateLimitedError) throw err;
-    return { error: `snapshot: ${err}`, durationMs: durationMs() };
+    return { error: `snapshot: ${err}`, durationMs: durationMs(), timings };
   }
 
   // Use full diffs or similarity-only based on config
+  const diffStart = performance.now();
   const metrics = config.useFullL1Diffs
-    ? measureL1Diffs(snapshotHtml, liveHtml)
-    : measureL1Similarities(snapshotHtml, liveHtml);
-  return { live, metrics, durationMs: durationMs() };
+    ? measureL1Diffs(snapshotHtml, liveHtml, config)
+    : measureL1Similarities(snapshotHtml, liveHtml, config);
+  timings.diffMs = performance.now() - diffStart;
+  timings.totalMs = durationMs();
+
+  return { live, metrics, durationMs: durationMs(), timings };
 }
 
 // why the live page counts as link rot, if it does:

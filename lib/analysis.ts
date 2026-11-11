@@ -7,6 +7,7 @@ import type { Snapshot } from './wayback';
 export interface AnalysisConfig {
   skipL1Similarity?: boolean; // If true, only parse L1 links without computing similarity (for benchmarking parse overhead)
   useFullL1Diffs?: boolean; // If true, compute full diffs for L1 links (for benchmarking diff overhead)
+  algorithms?: string[]; // If specified, only run these algorithms (e.g., ['myers-word'] or ['myers-block']); defaults to all
 }
 
 // analysis state for one tab, written by the background script and rendered by the popup.

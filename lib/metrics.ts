@@ -5,6 +5,7 @@ import type { Differ, Timings } from './diff/differ';
 import type { Representation } from './diff/diff-interfaces';
 import { MyersDiffer } from './diff/myers';
 import type { PreviewRun } from './diff/preview';
+import type { AnalysisConfig } from './analysis';
 
 // one way of analyzing a page: which differ runs on L0 (the page being analyzed), and which on each L1 link (the links on it)
 export interface DiffStrategy {
@@ -15,15 +16,28 @@ export interface DiffStrategy {
 }
 
 // the strategies to measure; to add an algorithm, add one line here (see lib/diff/README.md)
-const STRATEGIES: DiffStrategy[] = [
+const ALL_STRATEGIES: DiffStrategy[] = [
   { L0: new MyersDiffer('word'), L1: new MyersDiffer('word') },
   { L0: new MyersDiffer('block'), L1: new MyersDiffer('block') },
 ];
 
+// filter strategies based on config
+function getStrategies(config?: AnalysisConfig): DiffStrategy[] {
+  if (!config?.algorithms || config.algorithms.length === 0) {
+    return ALL_STRATEGIES;
+  }
+  return ALL_STRATEGIES.filter((s) => config.algorithms!.includes(s.L0.name));
+}
+
 // each differ runs once per page, even if several strategies use it (e.g. Myers on L0 with two
 // different L1 differs), so its time is counted once. differs are told apart by name, so names must be unique
-const L0_DIFFERS = uniqueByName(STRATEGIES.map((s) => s.L0));
-const L1_DIFFERS = uniqueByName(STRATEGIES.map((s) => s.L1));
+function getL0Differs(config?: AnalysisConfig): Differ<Representation>[] {
+  return uniqueByName(getStrategies(config).map((s) => s.L0));
+}
+
+function getL1Differs(config?: AnalysisConfig): Differ<Representation>[] {
+  return uniqueByName(getStrategies(config).map((s) => s.L1));
+}
 
 function uniqueByName(differs: Differ<Representation>[]): Differ<Representation>[] {
   return [...new Map(differs.map((d) => [d.name, d])).values()];
@@ -46,8 +60,8 @@ export type SimilarityMetrics =
   | { algorithm: string; error: string };
 
 // for L0: each strategy's L0 differ (full diff + similarity)
-export function measureL0Diffs(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
-  return L0_DIFFERS.map((differ) => {
+export function measureL0Diffs(snapshotHtml: string, liveHtml: string, config?: AnalysisConfig): DifferMetrics[] {
+  return getL0Differs(config).map((differ) => {
     try {
       const { diff, similarity, classification, timings } = differ.compare(snapshotHtml, liveHtml);
       return {
@@ -65,8 +79,8 @@ export function measureL0Diffs(snapshotHtml: string, liveHtml: string): DifferMe
 }
 
 // for each L1 link: each strategy's L1 differ, similarity only (see lib/linkDiff.ts)
-export function measureL1Similarities(snapshotHtml: string, liveHtml: string): SimilarityMetrics[] {
-  return L1_DIFFERS.map((differ) => {
+export function measureL1Similarities(snapshotHtml: string, liveHtml: string, config?: AnalysisConfig): SimilarityMetrics[] {
+  return getL1Differs(config).map((differ) => {
     try {
       const { similarity, classification, timings } = differ.similarity(snapshotHtml, liveHtml);
       return { algorithm: differ.name, timings, similarity, label: classification.label };
@@ -77,8 +91,8 @@ export function measureL1Similarities(snapshotHtml: string, liveHtml: string): S
 }
 
 // for each L1 link: each strategy's L1 differ, FULL DIFF (same as L0 but for benchmarking)
-export function measureL1Diffs(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
-  return L1_DIFFERS.map((differ) => {
+export function measureL1Diffs(snapshotHtml: string, liveHtml: string, config?: AnalysisConfig): DifferMetrics[] {
+  return getL1Differs(config).map((differ) => {
     try {
       const { diff, similarity, classification, timings } = differ.compare(snapshotHtml, liveHtml);
       return {
