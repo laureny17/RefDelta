@@ -1,4 +1,4 @@
-import { analysisKey, type Analysis, type LinkLookup, type Times } from '@/lib/analysis';
+import { analysisKey, CONFIG_KEY, type Analysis, type AnalysisConfig, type LinkLookup, type Times } from '@/lib/analysis';
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { measureL0Diffs } from '@/lib/metrics';
@@ -50,6 +50,10 @@ async function analyzeTab(tabId: number, requestedDate?: string) {
   // clear old results first
   await browser.storage.session.remove(key);
   const isCurrent = () => currentRun.get(tabId) === runId;
+
+  // Read analysis config (for benchmarking different L1 diff modes)
+  const configData = await browser.storage.session.get(CONFIG_KEY);
+  const config: AnalysisConfig = configData[CONFIG_KEY] || {};
 
   // wall-clock time of each step (see Times); total and linkLookups are refreshed on every update
   const start = performance.now();
@@ -107,7 +111,7 @@ async function analyzeTab(tabId: number, requestedDate?: string) {
   linksStart = performance.now();
   await update({ linksToLookUp, linkLookups: {}, linkDiffs: {} });
 
-  await analyzeLinks(linksToLookUp, snapshot?.timestamp, analysis, update, isCurrent);
+  await analyzeLinks(linksToLookUp, snapshot?.timestamp, analysis, update, isCurrent, config);
 }
 
 // run `fn`, recording how long it took (wall-clock) in times[step], even if it throws
@@ -128,9 +132,10 @@ async function diffAndSave(
   analysis: Analysis,
   update: (changes: Partial<Analysis>) => Promise<void>,
   isCurrent: () => boolean,
+  config: AnalysisConfig,
 ): Promise<boolean> {
   try {
-    const diff = await diffLink(link, snapshot, (phase) => void update({ linkPhases: { ...analysis.linkPhases, [link]: phase } }));
+    const diff = await diffLink(link, snapshot, (phase) => void update({ linkPhases: { ...analysis.linkPhases, [link]: phase } }), config);
     if (isCurrent()) await update({ linkDiffs: { ...analysis.linkDiffs, [link]: diff } });
     return false;
   } catch (err) {
@@ -149,6 +154,7 @@ async function analyzeLinks(
   analysis: Analysis,
   update: (changes: Partial<Analysis>) => Promise<void>,
   isCurrent: () => boolean,
+  config: AnalysisConfig,
 ) {
   let rateLimitHit = false;
 
@@ -180,7 +186,7 @@ async function analyzeLinks(
     // check every looked-up link for link rot (and diff it if it has a snapshot); the snapshot fetch goes
     // through waybackFetch, on the download clock (so it doesn't hold up the remaining lookups)
     if ('snapshot' in result) {
-      if (await diffAndSave(link, result.snapshot, analysis, update, isCurrent)) rateLimitHit = true;
+      if (await diffAndSave(link, result.snapshot, analysis, update, isCurrent, config)) rateLimitHit = true;
     }
   };
 

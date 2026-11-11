@@ -75,3 +75,22 @@ export function measureL1Similarities(snapshotHtml: string, liveHtml: string): S
     }
   });
 }
+
+// for each L1 link: each strategy's L1 differ, FULL DIFF (same as L0 but for benchmarking)
+export function measureL1Diffs(snapshotHtml: string, liveHtml: string): DifferMetrics[] {
+  return L1_DIFFERS.map((differ) => {
+    try {
+      const { diff, similarity, classification, timings } = differ.compare(snapshotHtml, liveHtml);
+      return {
+        algorithm: diff.algorithm,
+        timings,
+        sizeBytes: diff.stats.sizeBytes,
+        similarity,
+        label: classification.label,
+        preview: [], // Don't store preview for L1 to save memory
+      };
+    } catch (err) {
+      return { algorithm: differ.name, error: `${err}` };
+    }
+  });
+}
