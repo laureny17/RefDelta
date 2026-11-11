@@ -6,9 +6,10 @@
 // only the L1 page's own content is diffed; its links (L2) aren't followed; we stop
 // after one level: when the user opens an L1 page, it becomes the new L0 and gets analyzed from there
 
-import { measureL1Similarities, type SimilarityMetrics } from './metrics';
+import { measureL1Similarities, measureL1Diffs, type SimilarityMetrics, type DifferMetrics } from './metrics';
 import { fetchSnapshotHtml, type Snapshot } from './wayback';
 import { WaybackRateLimitedError } from './waybackRateLimit';
+import type { AnalysisConfig } from './analysis';
 
 // give up on a live page after this long (same as Wayback requests)
 const LIVE_TIMEOUT_MS = 30 * 1000;
@@ -21,8 +22,8 @@ const LIVE_TIMEOUT_MS = 30 * 1000;
 const BLOCKED_STATUSES = [401, 403, 429];
 
 export type LinkDiff =
-  // both versions fetched + compared: each L1 differ's similarity
-  | { live: LiveFetch; metrics: SimilarityMetrics[]; durationMs: number }
+  // both versions fetched + compared: each L1 differ's metrics (similarity-only or full diff based on config)
+  | { live: LiveFetch; metrics: SimilarityMetrics[] | DifferMetrics[]; durationMs: number }
   // link rot: the live page is gone or the site can't be reached, so it isn't diffed
   | { live?: LiveFetch; rot: string; durationMs: number } // no `live` if the site couldn't be reached at all
   // live page is fine but not diffed (e.g. no snapshot, not an HTML page, blocked)
@@ -46,11 +47,13 @@ export type LinkDiffPhase =
 
 // `snapshot`: the link's latest snapshot, or null if it has none (then it's only checked for link rot)
 // `onPhase`: called as each step starts; not awaited, so e.g. saving progress doesn't delay the step or add to its time
+// `config`: analysis configuration (e.g., whether to compute full diffs for L1)
 // throws WaybackRateLimitedError if Wayback rate-limits the snapshot fetch, so the caller can stop
 export async function diffLink(
   link: string,
   snapshot: Snapshot | null,
   onPhase: (phase: LinkDiffPhase) => void = () => {},
+  config: AnalysisConfig = {},
 ): Promise<LinkDiff> {
   const start = performance.now();
   const durationMs = () => performance.now() - start;
@@ -91,7 +94,11 @@ export async function diffLink(
     return { error: `snapshot: ${err}`, durationMs: durationMs() };
   }
 
-  return { live, metrics: measureL1Similarities(snapshotHtml, liveHtml), durationMs: durationMs() };
+  // Use full diffs or similarity-only based on config
+  const metrics = config.useFullL1Diffs
+    ? measureL1Diffs(snapshotHtml, liveHtml)
+    : measureL1Similarities(snapshotHtml, liveHtml);
+  return { live, metrics, durationMs: durationMs() };
 }
 
 // why the live page counts as link rot, if it does:

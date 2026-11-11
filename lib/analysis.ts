@@ -3,6 +3,12 @@ import type { DifferMetrics } from './metrics';
 import type { PageContent } from './parse/extract';
 import type { Snapshot } from './wayback';
 
+// configuration for analysis behavior
+export interface AnalysisConfig {
+  skipL1Similarity?: boolean; // If true, only parse L1 links without computing similarity (for benchmarking parse overhead)
+  useFullL1Diffs?: boolean; // If true, compute full diffs for L1 links (for benchmarking diff overhead)
+}
+
 // analysis state for one tab, written by the background script and rendered by the popup.
 // fields fill in as each stage finishes
 export interface Analysis {
@@ -47,3 +53,6 @@ export type LinkLookup =
 export function analysisKey(tabId: number): string {
   return `analysis:${tabId}`;
 }
+
+// Config key for storing analysis configuration
+export const CONFIG_KEY = 'analysisConfig';

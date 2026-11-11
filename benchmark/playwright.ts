@@ -1,6 +1,8 @@
 // Playwright-based end-to-end benchmark
 // Runs the actual extension in a real browser and collects metrics
-// Run with: npm run benchmark:playwright [--output]
+// Run with: npm run benchmark:playwright [--full-l1-diffs]
+//   (default): L1 similarity mode - faster, measures parse + similarity time only
+//   --full-l1-diffs: L1 full diff mode - slower, also measures diff time (for benchmarking overhead)
 
 import { chromium, type BrowserContext } from 'playwright';
 import fs from 'fs/promises';
@@ -86,7 +88,9 @@ interface BenchmarkResult {
               timings: {
                 parseMs: number;
                 similarityMs: number;
+                diffMs?: number; // included when useFullL1Diffs is true
               };
+              sizeBytes?: number; // included when useFullL1Diffs is true
             }
           | { algorithm: string; error: string }
         >;
@@ -110,7 +114,7 @@ async function setupBrowser() {
   return context;
 }
 
-async function analyzeUrl(context: BrowserContext, testCase: TestCase): Promise<BenchmarkResult> {
+async function analyzeUrl(context: BrowserContext, testCase: TestCase, useFullL1Diffs: boolean = false): Promise<BenchmarkResult> {
   const result: BenchmarkResult = {
     id: testCase.id,
     url: testCase.url,
@@ -163,6 +167,11 @@ async function analyzeUrl(context: BrowserContext, testCase: TestCase): Promise<
         return false;
       }
     }, tabId);
+
+    // Set analysis config in storage before triggering analysis
+    await serviceWorker.evaluate((config) => {
+      chrome.storage.session.set({ analysisConfig: config });
+    }, { useFullL1Diffs });
 
     if (!triggered) {
       const extensionId = await serviceWorker.evaluate(() => chrome.runtime.id);
@@ -336,7 +345,9 @@ async function analyzeUrl(context: BrowserContext, testCase: TestCase): Promise<
                             timings: {
                               parseMs: m.timings.parseMs,
                               similarityMs: m.timings.similarityMs,
+                              ...(m.timings.diffMs !== undefined && { diffMs: m.timings.diffMs }),
                             },
+                            ...(m.sizeBytes !== undefined && { sizeBytes: m.sizeBytes }),
                           }
                       )),
                       durationMs: diff.durationMs,
@@ -403,8 +414,10 @@ async function analyzeUrl(context: BrowserContext, testCase: TestCase): Promise<
   return result;
 }
 
-async function runPlaywrightBenchmark(saveOutput: boolean = false) {
+async function runPlaywrightBenchmark(useFullL1Diffs: boolean = false) {
+  const mode = useFullL1Diffs ? 'L1-diffs' : 'L1-similarity';
   console.log('=== Playwright End-to-End Benchmark ===\n');
+  console.log(`L1 mode: ${useFullL1Diffs ? 'Full diffs (with diffMs)' : 'Similarity-only (default)'}\n`);
 
   // Check if extension is built
   console.log(`Checking for extension at: ${EXTENSION_PATH}`);
@@ -429,7 +442,7 @@ async function runPlaywrightBenchmark(saveOutput: boolean = false) {
       console.log(`\n[${i + 1}/${TEST_CASES.length}] ${testCase.id}: ${testCase.url}`);
       console.log('-'.repeat(70));
 
-      const result = await analyzeUrl(context, testCase);
+      const result = await analyzeUrl(context, testCase, useFullL1Diffs);
       results.push(result);
 
       await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -530,14 +543,14 @@ async function runPlaywrightBenchmark(saveOutput: boolean = false) {
 
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const combinedFile = path.join(OUTPUT_DIR, `playwright-${timestamp}.json`);
+  const combinedFile = path.join(OUTPUT_DIR, `playwright-${mode}-${timestamp}.json`);
   await fs.writeFile(combinedFile, JSON.stringify(results, null, 2));
   console.log(`💾 All results saved to: ${combinedFile}`);
 
-  const latestFile = path.join(OUTPUT_DIR, 'playwright-latest.json');
+  const latestFile = path.join(OUTPUT_DIR, `playwright-${mode}-latest.json`);
   await fs.writeFile(latestFile, JSON.stringify(results, null, 2));
   console.log(`💾 Latest results: ${latestFile}\n`);
 }
 
-const saveOutput = process.argv.includes('--output');
-runPlaywrightBenchmark(saveOutput).catch(console.error);
+const useFullL1Diffs = process.argv.includes('--full-l1-diffs');
+runPlaywrightBenchmark(useFullL1Diffs).catch(console.error);
