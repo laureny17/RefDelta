@@ -51,19 +51,6 @@
   "change_type": "no_change"
 }
 {
-  "id": "youtube",
-  "url": "http://www.youtube.com/?themeRefresh=1",
-  "old": {
-    "timestamp": "20261106130833",
-    "file": "html/youtube/old.html"
-  },
-  "new": {
-    "timestamp": "20261107133403",
-    "file": "html/youtube/new.html"
-  },
-  "change_type": "404"
-}
-{
   "id": "facebook-001",
   "url": "https://facebook.com",
   "old": {
@@ -218,4 +205,446 @@
     "file": "html/wayback-cdx-docs-001/new.html"
   },
   "change_type": "404"
+}
+{
+  "id": "government-001",
+  "url": "https://docs.house.gov/floor",
+  "old": {
+    "timestamp": "20260531161444",
+    "file": "html/government-001/old.html"
+  },
+  "new": {
+    "timestamp": "20260601173722",
+    "file": "html/government-001/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "cdc-flu-001",
+  "url": "https://www.cdc.gov/flu/index.html",
+  "old": {
+    "timestamp": "20260223174353",
+    "file": "html/cdc-flu-001/old.html"
+  },
+  "new": {
+    "timestamp": "20260317030643",
+    "file": "html/cdc-flu-001/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "cdc-flu-002",
+  "url": "https://www.cdc.gov/flu/index.html",
+  "old": {
+    "timestamp": "20091007135930",
+    "file": "html/cdc-flu-002/old.html"
+  },
+  "new": {
+    "timestamp": "20221208093241",
+    "file": "html/cdc-flu-002/new.html"
+  },
+  "change_type": "no_change" // but also 404 but also minor in regards to formatting
+}
+{
+  "id": "cdc-flu-003",
+  "url": "https://www.cdc.gov/flu/index.html",
+  "old": {
+    "timestamp": "20221208093241",
+    "file": "html/cdc-flu-003/old.html"
+  },
+  "new": {
+    "timestamp": "20241127202904",
+    "file": "html/cdc-flu-003/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tumblr-user-001",
+  "url": "https://www.tumblr.com/thatonefishfriend",
+  "old": {
+    "timestamp": "20241126211231",
+    "file": "html/tumblr-user-001/old.html"
+  },
+  "new": {
+    "timestamp": "20260214161432",
+    "file": "html/tumblr-user-001/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "tumblr-user-002",
+  "url": "https://www.tumblr.com/thatonefishfriend",
+  "old": {
+    "timestamp": "20241126211231",
+    "file": "html/tumblr-user-002/old.html"
+  },
+  "new": {
+    "timestamp": "20250630133737",
+    "file": "html/tumblr-user-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "google-privacy-001",
+  "url": "https://policies.google.com/privacy?client_theme=dark",
+  "old": {
+    "timestamp": "20261008095306",
+    "file": "html/google-privacy-001/old.html"
+  },
+  "new": {
+    "timestamp": "20261020044632",
+    "file": "html/google-privacy-001/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "facebook-privacy-001",
+  "url": "https://www.facebook.com/privacy/policy/",
+  "old": {
+    "timestamp": "20230701005430",
+    "file": "html/facebook-privacy-001/old.html"
+  },
+  "new": {
+    "timestamp": "20230701005430",
+    "file": "html/facebook-privacy-001/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "openai-policies-001",
+  "url": "https://openai.com/policies/usage-policies/",
+  "old": {
+    "timestamp": "20260304041834",
+    "file": "html/openai-policies-001/old.html"
+  },
+  "new": {
+    "timestamp": "20260308234417",
+    "file": "html/openai-policies-001/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "openai-policies-002",
+  "url": "https://openai.com/policies/usage-policies/",
+  "old": {
+    "timestamp": "20230315092843",
+    "file": "html/openai-policies-002/old.html"
+  },
+  "new": {
+    "timestamp": "20260930043244",
+    "file": "html/openai-policies-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "openai-policies-003",
+  "url": "https://openai.com/policies/usage-policies/",
+  "old": {
+    "timestamp": "20230315092843",
+    "file": "html/openai-policies-003/old.html"
+  },
+  "new": {
+    "timestamp": "20230317175936",
+    "file": "html/openai-policies-003/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "adobe-policies-001",
+  "url": "https://www.adobe.com/legal/subscription-terms.html",
+  "old": {
+    "timestamp": "20170407060117",
+    "file": "html/adobe-policies-001/old.html"
+  },
+  "new": {
+    "timestamp": "20170701045554",
+    "file": "html/adobe-policies-001/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "adobe-policies-002",
+  "url": "https://www.adobe.com/legal/subscription-terms.html",
+  "old": {
+    "timestamp": "20170407060117",
+    "file": "html/adobe-policies-002/old.html"
+  },
+  "new": {
+    "timestamp": "20220530232346",
+    "file": "html/adobe-policies-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "epa-001",
+  "url": "https://www.epa.gov/climatechange-science/causes-climate-change",
+  "old": {
+    "timestamp": "20211104221922",
+    "file": "html/epa-001/old.html"
+  },
+  "new": {
+    "timestamp": "20220706073438",
+    "file": "html/epa-001/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "epa-002",
+  "url": "https://www.epa.gov/climatechange-science/causes-climate-change",
+  "old": {
+    "timestamp": "20211104221922",
+    "file": "html/epa-002/old.html"
+  },
+  "new": {
+    "timestamp": "20261029011214",
+    "file": "html/epa-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "epa-003",
+  "url": "https://www.epa.gov/climatechange-science/causes-climate-change",
+  "old": {
+    "timestamp": "20211104221922",
+    "file": "html/epa-003/old.html"
+  },
+  "new": {
+    "timestamp": "20211218064933",
+    "file": "html/epa-003/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "epa-004",
+  "url": "https://www.epa.gov/climatechange-science/causes-climate-change",
+  "old": {
+    "timestamp": "20211104221922",
+    "file": "html/epa-004/old.html"
+  },
+  "new": {
+    "timestamp": "20231003153749",
+    "file": "html/epa-004/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "gm-001",
+  "url": "https://www.gm.com/privacy-statement",
+  "old": {
+    "timestamp": "20211117000909",
+    "file": "html/gm-001/old.html"
+  },
+  "new": {
+    "timestamp": "20220331085513",
+    "file": "html/gm-001/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "gm-002",
+  "url": "https://www.gm.com/privacy-statement",
+  "old": {
+    "timestamp": "20211117000909",
+    "file": "html/gm-002/old.html"
+  },
+  "new": {
+    "timestamp": "20261021024805",
+    "file": "html/gm-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tiktok-001",
+  "url": "https://www.tiktok.com/legal/page/us/privacy-policy/en",
+  "old": {
+    "timestamp": "20221112003121",
+    "file": "html/tiktok-001/old.html"
+  },
+  "new": {
+    "timestamp": "20230326004900",
+    "file": "html/tiktok-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tiktok-002",
+  "url": "https://www.tiktok.com/legal/page/us/privacy-policy/en",
+  "old": {
+    "timestamp": "20230131235621",
+    "file": "html/tiktok-002/old.html"
+  },
+  "new": {
+    "timestamp": "20230326004900",
+    "file": "html/tiktok-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tiktok-003",
+  "url": "https://www.tiktok.com/legal/page/us/privacy-policy/en",
+  "old": {
+    "timestamp": "20230325002125",
+    "file": "html/tiktok-003/old.html"
+  },
+  "new": {
+    "timestamp": "20230326004900",
+    "file": "html/tiktok-003/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "openbooks-001",
+  "url": "https://openbooks.col.org/",
+  "old": {
+    "timestamp": "20210630012724",
+    "file": "html/openbooks-001/old.html"
+  },
+  "new": {
+    "timestamp": "20211021181022",
+    "file": "html/openbooks-001/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "openbooks-002",
+  "url": "https://openbooks.col.org/",
+  "old": {
+    "timestamp": "20210630012724",
+    "file": "html/openbooks-002/old.html"
+  },
+  "new": {
+    "timestamp": "20220521221426",
+    "file": "html/openbooks-002/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "openbooks-003",
+  "url": "https://openbooks.col.org/",
+  "old": {
+    "timestamp": "20210630012724",
+    "file": "html/openbooks-003/old.html"
+  },
+  "new": {
+    "timestamp": "20260219003342",
+    "file": "html/openbooks-003/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tumblr-outlink-001",
+  "url": "https://alanrickmandaily.com/",
+  "old": {
+    "timestamp": "20110204030758",
+    "file": "html/tumblr-outlink-001/old.html"
+  },
+  "new": {
+    "timestamp": "20170217233216",
+    "file": "html/tumblr-outlink-001/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tumblr-outlink-002",
+  "url": "https://alanrickmandaily.com/",
+  "old": {
+    "timestamp": "20170217233216",
+    "file": "html/tumblr-outlink-002/old.html"
+  },
+  "new": {
+    "timestamp": "20170821032031",
+    "file": "html/tumblr-outlink-002/new.html"
+  },
+  "change_type": "no_change"
+}
+{
+  "id": "tumblr-outlink-003",
+  "url": "https://alanrickmandaily.com/",
+  "old": {
+    "timestamp": "20170217233216",
+    "file": "html/tumblr-outlink-003/old.html"
+  },
+  "new": {
+    "timestamp": "20180614211754",
+    "file": "html/tumblr-outlink-003/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "tumblr-outlink-004",
+  "url": "http://thelostwonder.tumblr.com/",
+  "old": {
+    "timestamp": "20111102035122",
+    "file": "html/tumblr-outlink-004/old.html"
+  },
+  "new": {
+    "timestamp": "20220714022930",
+    "file": "html/tumblr-outlink-004/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "tumblr-outlink-005",
+  "url": "http://thelostwonder.tumblr.com/",
+  "old": {
+    "timestamp": "20111102035122",
+    "file": "html/tumblr-outlink-005/old.html"
+  },
+  "new": {
+    "timestamp": "20130330022253",
+    "file": "html/tumblr-outlink-005/new.html"
+  },
+  "change_type": "major"
+}
+{
+  "id": "tumblr-outlink-006",
+  "url": "http://thelostwonder.tumblr.com/",
+  "old": {
+    "timestamp": "20111102035122",
+    "file": "html/tumblr-outlink-006/old.html"
+  },
+  "new": {
+    "timestamp": "20120117222137",
+    "file": "html/tumblr-outlink-006/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "tumblr-outlink-007",
+  "url": "https://www.wearewizards-themovie.com/",
+  "old": {
+    "timestamp": "20071026003820",
+    "file": "html/tumblr-outlink-007/old.html"
+  },
+  "new": {
+    "timestamp": "20080509103120",
+    "file": "html/tumblr-outlink-007/new.html"
+  },
+  "change_type": "404"
+}
+{
+  "id": "tumblr-outlink-008",
+  "url": "https://www.wearewizards-themovie.com/",
+  "old": {
+    "timestamp": "20071026003820",
+    "file": "html/tumblr-outlink-008/old.html"
+  },
+  "new": {
+    "timestamp": "20120320062538",
+    "file": "html/tumblr-outlink-008/new.html"
+  },
+  "change_type": "minor"
+}
+{
+  "id": "tumblr-outlink-009",
+  "url": "https://www.wearewizards-themovie.com/",
+  "old": {
+    "timestamp": "20071026003820",
+    "file": "html/tumblr-outlink-009/old.html"
+  },
+  "new": {
+    "timestamp": "20190708050357",
+    "file": "html/tumblr-outlink-009/new.html"
+  },
+  "change_type": "major"
 }
