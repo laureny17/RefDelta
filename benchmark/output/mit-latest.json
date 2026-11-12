@@ -1,0 +1,554 @@
+{
+  "id": "mit",
+  "url": "https://www.mit.edu/",
+  "success": true,
+  "analysis": {
+    "snapshot": {
+      "timestamp": "20261104114133",
+      "statusCode": "302"
+    },
+    "timings": {
+      "pageMs": 5.4000000059604645,
+      "snapshotLookupMs": 213.69999998807907,
+      "snapshotDownloadMs": 2999.800000011921,
+      "differsMs": 35,
+      "linkLookupsMs": 38433.09999999404,
+      "totalMs": 41689.19999998808
+    },
+    "differMetrics": [
+      {
+        "algorithm": "myers-word",
+        "label": "major",
+        "similarity": 0.5175718849840255,
+        "timings": {
+          "diffMs": 7.699999988079071,
+          "parseMs": 14.599999994039536,
+          "similarityMs": 0.10000002384185791
+        },
+        "sizeBytes": 4816
+      },
+      {
+        "algorithm": "myers-block",
+        "label": "major",
+        "similarity": 0.5161290322580645,
+        "timings": {
+          "diffMs": 0.4000000059604645,
+          "parseMs": 12.199999988079071,
+          "similarityMs": 0
+        },
+        "sizeBytes": 3645
+      }
+    ],
+    "linkStats": {
+      "total": 16,
+      "analyzed": 16
+    },
+    "linkMetrics": [
+      {
+        "url": "https://www.mit.edu/resources/",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261008122824",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261008122824/https://www.mit.edu/resources/"
+          },
+          "durationMs": 234.2999999821186
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 18,
+                "similarityMs": 0.09999999403953552
+              }
+            }
+          ],
+          "durationMs": 729.4000000059605,
+          "timings": {
+            "diffMs": 18.200000017881393,
+            "liveFetchMs": 214.09999999403954,
+            "snapshotDownloadMs": 496.19999998807907,
+            "totalMs": 729.4000000059605
+          }
+        }
+      },
+      {
+        "url": "https://www.mit.edu/parents",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20260722035634",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20260722035634/https://www.mit.edu/parents/"
+          },
+          "durationMs": 286.80000001192093
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://www.mit.edu/parents/",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 0.9948927477017364,
+              "timings": {
+                "parseMs": 29.69999998807907,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 805,
+          "timings": {
+            "diffMs": 29.69999998807907,
+            "liveFetchMs": 274.90000000596046,
+            "snapshotDownloadMs": 499.40000000596046,
+            "totalMs": 805
+          }
+        }
+      },
+      {
+        "url": "https://www.mit.edu/resources",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261008122824",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261008122824/https://www.mit.edu/resources/"
+          },
+          "durationMs": 320.5
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://www.mit.edu/resources/",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 13.199999988079071,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 37.19999998807907,
+          "timings": {
+            "diffMs": 13.199999988079071,
+            "liveFetchMs": 21.700000017881393,
+            "snapshotDownloadMs": 1.699999988079071,
+            "totalMs": 37.19999998807907
+          }
+        }
+      },
+      {
+        "url": "https://www.mit.edu/response-government-activity",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261009065913",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261009065913/https://www.mit.edu/response-government-activity/"
+          },
+          "durationMs": 261.90000000596046
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://www.mit.edu/response-government-activity/",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 14.400000005960464,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 731.2000000178814,
+          "timings": {
+            "diffMs": 14.400000005960464,
+            "liveFetchMs": 57.900000005960464,
+            "snapshotDownloadMs": 657.4000000059605,
+            "totalMs": 731.2000000178814
+          }
+        }
+      },
+      {
+        "url": "http://news.mit.edu/2026/somebodys-got-to-do-it-why-not-me-andrew-voelsing-1110",
+        "lookup": {
+          "snapshot": null,
+          "durationMs": 611.2999999821186
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://news.mit.edu/2026/somebodys-got-to-do-it-why-not-me-andrew-voelsing-1110",
+            "status": 200
+          },
+          "skipped": "no snapshot to compare against",
+          "durationMs": 139.59999999403954,
+          "timings": {
+            "liveFetchMs": 139.30000001192093,
+            "totalMs": 139.59999999403954
+          }
+        }
+      },
+      {
+        "url": "https://climate-major.mit.edu/",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20260114203631",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20260114203631/https://climate-major.mit.edu/"
+          },
+          "durationMs": 524.4000000059605
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "minor",
+              "similarity": 0.988929889298893,
+              "timings": {
+                "parseMs": 13.5,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 581.1000000238419,
+          "timings": {
+            "diffMs": 13.600000023841858,
+            "liveFetchMs": 95.90000000596046,
+            "snapshotDownloadMs": 470.39999997615814,
+            "totalMs": 581.1000000238419
+          }
+        }
+      },
+      {
+        "url": "https://nrotc.mit.edu/",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20260101080340",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20260101080340/https://nrotc.mit.edu/"
+          },
+          "durationMs": 355.40000000596046
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 27.700000017881393,
+                "similarityMs": 0.09999999403953552
+              }
+            }
+          ],
+          "durationMs": 802.2000000178814,
+          "timings": {
+            "diffMs": 27.80000001192093,
+            "liveFetchMs": 96,
+            "snapshotDownloadMs": 677,
+            "totalMs": 802.2000000178814
+          }
+        }
+      },
+      {
+        "url": "https://kesem.mit.edu/",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20260317192151",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20260317192151/http://kesem.mit.edu/"
+          },
+          "durationMs": 426.19999998807907
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "minor",
+              "similarity": 0.9712707182320443,
+              "timings": {
+                "parseMs": 17,
+                "similarityMs": 0.5999999940395355
+              }
+            }
+          ],
+          "durationMs": 887.4000000059605,
+          "timings": {
+            "diffMs": 17.599999994039536,
+            "liveFetchMs": 76.19999998807907,
+            "snapshotDownloadMs": 792.0999999940395,
+            "totalMs": 887.4000000059605
+          }
+        }
+      },
+      {
+        "url": "https://www.mit.edu/archive/spotlight/challenge-0",
+        "lookup": {
+          "snapshot": null,
+          "durationMs": 2673.5
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://www.mit.edu/archive/spotlight/challenge-0/",
+            "status": 200
+          },
+          "skipped": "no snapshot to compare against",
+          "durationMs": 45.599999994039536,
+          "timings": {
+            "liveFetchMs": 45.19999998807907,
+            "totalMs": 45.599999994039536
+          }
+        }
+      },
+      {
+        "url": "http://news.mit.edu/2026/single-ai-model-simulates-many-substances-behavior-1109",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261110072824",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261110072824/https://news.mit.edu/2026/single-ai-model-simulates-many-substances-behavior-1109"
+          },
+          "durationMs": 1040
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://news.mit.edu/2026/single-ai-model-simulates-many-substances-behavior-1109",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 32.400000005960464,
+                "similarityMs": 0.09999999403953552
+              }
+            }
+          ],
+          "durationMs": 576.3000000119209,
+          "timings": {
+            "diffMs": 32.69999998807907,
+            "liveFetchMs": 32.5,
+            "snapshotDownloadMs": 510.40000000596046,
+            "totalMs": 576.3000000119209
+          }
+        }
+      },
+      {
+        "url": "https://alum.mit.edu/slice/combat-vet-brings-little-mit-west-point",
+        "lookup": {
+          "snapshot": null,
+          "durationMs": 1591.5
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "skipped": "no snapshot to compare against",
+          "durationMs": 96.2999999821186,
+          "timings": {
+            "liveFetchMs": 95.90000000596046,
+            "totalMs": 96.2999999821186
+          }
+        }
+      },
+      {
+        "url": "http://news.mit.edu/2026/mit-engineers-create-nanoparticles-delivering-personalized-cancer-vaccines-1030",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261102144905",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261102144905/https://news.mit.edu/2026/mit-engineers-create-nanoparticles-delivering-personalized-cancer-vaccines-1030"
+          },
+          "durationMs": 654.1999999880791
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://news.mit.edu/2026/mit-engineers-create-nanoparticles-delivering-personalized-cancer-vaccines-1030",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 0.9970674486803519,
+              "timings": {
+                "parseMs": 28.899999976158142,
+                "similarityMs": 0.10000002384185791
+              }
+            }
+          ],
+          "durationMs": 938.9000000059605,
+          "timings": {
+            "diffMs": 29,
+            "liveFetchMs": 47.5,
+            "snapshotDownloadMs": 861.4000000059605,
+            "totalMs": 938.9000000059605
+          }
+        }
+      },
+      {
+        "url": "http://news.mit.edu/2026/soft-robot-could-help-doctors-diagnose-treat-small-intestine-disorders-1028",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261105041553",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261105041553/https://news.mit.edu/2026/soft-robot-could-help-doctors-diagnose-treat-small-intestine-disorders-1028"
+          },
+          "durationMs": 248.7000000178814
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://news.mit.edu/2026/soft-robot-could-help-doctors-diagnose-treat-small-intestine-disorders-1028",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 28.599999994039536,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 629.5999999940395,
+          "timings": {
+            "diffMs": 28.599999994039536,
+            "liveFetchMs": 117.40000000596046,
+            "snapshotDownloadMs": 482.40000000596046,
+            "totalMs": 629.5999999940395
+          }
+        }
+      },
+      {
+        "url": "https://news.mit.edu/2026/fact-sheet-supporting-mits-jewish-community",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261015231236",
+            "statusCode": "-",
+            "snapshotUrl": "https://web.archive.org/web/20261015231236/https://news.mit.edu/2026/fact-sheet-supporting-mits-jewish-community"
+          },
+          "durationMs": 407.2000000178814
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 31.099999994039536,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 1212.8999999761581,
+          "timings": {
+            "diffMs": 31.099999994039536,
+            "liveFetchMs": 656.8000000119209,
+            "snapshotDownloadMs": 523.2999999821186,
+            "totalMs": 1212.8999999761581
+          }
+        }
+      },
+      {
+        "url": "https://understanding.mit.edu/",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20261015231414",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20261015231414/https://understanding.mit.edu/"
+          },
+          "durationMs": 251.39999997615814
+        },
+        "diff": {
+          "live": {
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "unchanged",
+              "similarity": 1,
+              "timings": {
+                "parseMs": 8.700000017881393,
+                "similarityMs": 0
+              }
+            }
+          ],
+          "durationMs": 880.2000000178814,
+          "timings": {
+            "diffMs": 8.700000017881393,
+            "liveFetchMs": 294.09999999403954,
+            "snapshotDownloadMs": 576.3999999761581,
+            "totalMs": 880.2000000178814
+          }
+        }
+      },
+      {
+        "url": "https://www.mit.edu/mit-daily-weekly",
+        "lookup": {
+          "snapshot": {
+            "timestamp": "20260722035800",
+            "statusCode": "200",
+            "snapshotUrl": "https://web.archive.org/web/20260722035800/https://www.mit.edu/mit-daily-weekly/"
+          },
+          "durationMs": 396.80000001192093
+        },
+        "diff": {
+          "live": {
+            "redirectedTo": "https://www.mit.edu/mit-daily-weekly/",
+            "status": 200
+          },
+          "metrics": [
+            {
+              "algorithm": "myers-word",
+              "label": "major",
+              "similarity": 0.7873711340206185,
+              "timings": {
+                "parseMs": 16.30000001192093,
+                "similarityMs": 31.399999976158142
+              }
+            }
+          ],
+          "durationMs": 457.2999999821186,
+          "timings": {
+            "diffMs": 47.69999998807907,
+            "liveFetchMs": 46.79999998211861,
+            "snapshotDownloadMs": 361.69999998807907,
+            "totalMs": 457.2999999821186
+          }
+        }
+      }
+    ]
+  }
+}
