@@ -1,9 +1,10 @@
 // Playwright-based end-to-end benchmark
 // Runs the actual extension in a real browser and collects metrics
-// Run with: npm run benchmark:playwright [--full-l1-diffs] [--name NAME]
-//   (default): L1 similarity mode - faster, measures parse + similarity time only
-//   --full-l1-diffs: L1 full diff mode - slower, also measures diff time (for benchmarking overhead)
+// Run with: npm run benchmark:playwright [OPTIONS]
+//   --algorithms ALGO1,ALGO2: Comma-separated list of algorithms (default: myers-word,myers-block)
+//   --modes MODE1,MODE2: Comma-separated list of modes: similarity,diff (default: both)
 //   --name NAME: Custom name for output files (default: "latest")
+//   --full-l1-diffs: DEPRECATED - use --modes diff instead
 
 import { chromium, type BrowserContext } from 'playwright';
 import fs from 'fs/promises';
@@ -84,14 +85,15 @@ interface BenchmarkResult {
         metrics?: Array<
           | {
               algorithm: string;
+              mode: 'similarity' | 'diff';
               label: string;
               similarity: number;
               timings: {
                 parseMs: number;
-                similarityMs: number;
-                diffMs?: number; // included when useFullL1Diffs is true
+                similarityMs?: number; // only in similarity mode
+                diffMs?: number; // only in diff mode
               };
-              sizeBytes?: number; // included when useFullL1Diffs is true
+              sizeBytes?: number; // only in diff mode
             }
           | { algorithm: string; error: string }
         >;
@@ -121,7 +123,12 @@ async function setupBrowser() {
   return context;
 }
 
-async function analyzeUrl(context: BrowserContext, testCase: TestCase, useFullL1Diffs: boolean = false, algorithms?: string[]): Promise<BenchmarkResult> {
+async function analyzeUrl(
+  context: BrowserContext,
+  testCase: TestCase,
+  algorithms?: string[],
+  modes?: ('similarity' | 'diff')[]
+): Promise<BenchmarkResult> {
   const result: BenchmarkResult = {
     id: testCase.id,
     url: testCase.url,
@@ -178,7 +185,7 @@ async function analyzeUrl(context: BrowserContext, testCase: TestCase, useFullL1
     // Set analysis config in storage before triggering analysis
     await serviceWorker.evaluate((config) => {
       chrome.storage.session.set({ analysisConfig: config });
-    }, { useFullL1Diffs, algorithms });
+    }, { algorithms, modes });
 
     if (!triggered) {
       const extensionId = await serviceWorker.evaluate(() => chrome.runtime.id);
@@ -349,6 +356,7 @@ async function analyzeUrl(context: BrowserContext, testCase: TestCase, useFullL1
                         ? { algorithm: m.algorithm, error: m.error }
                         : {
                             algorithm: m.algorithm,
+                            mode: m.mode,
                             label: m.label,
                             similarity: m.similarity,
                             timings: {
@@ -424,11 +432,14 @@ async function analyzeUrl(context: BrowserContext, testCase: TestCase, useFullL1
   return result;
 }
 
-async function runPlaywrightBenchmark(useFullL1Diffs: boolean = false, outputName: string = 'latest', algorithms?: string[]) {
-  const mode = useFullL1Diffs ? 'L1-diffs' : 'L1-similarity';
+async function runPlaywrightBenchmark(
+  outputName: string = 'latest',
+  algorithms?: string[],
+  modes?: ('similarity' | 'diff')[]
+) {
   console.log('=== Playwright End-to-End Benchmark ===\n');
-  console.log(`L1 mode: ${useFullL1Diffs ? 'Full diffs (with diffMs)' : 'Similarity-only (default)'}`);
   console.log(`Algorithms: ${algorithms ? algorithms.join(', ') : 'all (myers-word, myers-block)'}`);
+  console.log(`Modes: ${modes ? modes.join(', ') : 'both (similarity, diff)'}`);
   console.log(`Output name: ${outputName}\n`);
 
   // Check if extension is built
@@ -454,7 +465,7 @@ async function runPlaywrightBenchmark(useFullL1Diffs: boolean = false, outputNam
       console.log(`\n[${i + 1}/${TEST_CASES.length}] ${testCase.id}: ${testCase.url}`);
       console.log('-'.repeat(70));
 
-      const result = await analyzeUrl(context, testCase, useFullL1Diffs, algorithms);
+      const result = await analyzeUrl(context, testCase, algorithms, modes);
       results.push(result);
 
       await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -555,25 +566,34 @@ async function runPlaywrightBenchmark(useFullL1Diffs: boolean = false, outputNam
 
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const combinedFile = path.join(OUTPUT_DIR, `playwright-${mode}-${timestamp}.json`);
+  const combinedFile = path.join(OUTPUT_DIR, `playwright-${timestamp}.json`);
   await fs.writeFile(combinedFile, JSON.stringify(results, null, 2));
   console.log(`💾 All results saved to: ${combinedFile}`);
 
-  const namedFile = path.join(OUTPUT_DIR, `playwright-${mode}-${outputName}.json`);
+  const namedFile = path.join(OUTPUT_DIR, `playwright-${outputName}.json`);
   await fs.writeFile(namedFile, JSON.stringify(results, null, 2));
   console.log(`💾 Named results: ${namedFile}\n`);
 }
 
 // Parse command line arguments
-const useFullL1Diffs = process.argv.includes('--full-l1-diffs');
 const nameIndex = process.argv.indexOf('--name');
 const outputName = nameIndex !== -1 && process.argv[nameIndex + 1]
   ? process.argv[nameIndex + 1]
   : 'latest';
 
-const algorithmIndex = process.argv.indexOf('--algorithm');
-const algorithms = algorithmIndex !== -1 && process.argv[algorithmIndex + 1]
-  ? [process.argv[algorithmIndex + 1]]
-  : undefined; // undefined = run all algorithms
+const algorithmsIndex = process.argv.indexOf('--algorithms');
+const algorithms = algorithmsIndex !== -1 && process.argv[algorithmsIndex + 1]
+  ? process.argv[algorithmsIndex + 1].split(',')
+  : undefined; // undefined = run all algorithms (myers-word, myers-block)
 
-runPlaywrightBenchmark(useFullL1Diffs, outputName, algorithms).catch(console.error);
+const modesIndex = process.argv.indexOf('--modes');
+let modes: ('similarity' | 'diff')[] | undefined;
+if (modesIndex !== -1 && process.argv[modesIndex + 1]) {
+  modes = process.argv[modesIndex + 1].split(',') as ('similarity' | 'diff')[];
+} else if (process.argv.includes('--full-l1-diffs')) {
+  modes = ['diff']; // backwards compatibility
+} else {
+  modes = undefined; // undefined = run both modes
+}
+
+runPlaywrightBenchmark(outputName, algorithms, modes).catch(console.error);
