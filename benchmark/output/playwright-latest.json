@@ -1,0 +1,2858 @@
+[
+  {
+    "id": "example",
+    "url": "https://example.com/",
+    "success": true,
+    "analysis": {
+      "snapshot": {
+        "timestamp": "20261113230533",
+        "statusCode": "200"
+      },
+      "timings": {
+        "pageMs": 4.600000023841858,
+        "snapshotLookupMs": 803.2000000476837,
+        "snapshotDownloadMs": 887.2000000476837,
+        "differsMs": 5.199999928474426,
+        "linkLookupsMs": 1601.7999999523163,
+        "totalMs": 3303.899999976158
+      },
+      "differMetrics": [
+        {
+          "algorithm": "myers-word",
+          "label": "major",
+          "similarity": 0.31645569620253167,
+          "timings": {
+            "diffMs": 0.6000000238418579,
+            "parseMs": 3.6999999284744263,
+            "similarityMs": 0
+          },
+          "sizeBytes": 1695
+        },
+        {
+          "algorithm": "myers-block",
+          "label": "major",
+          "similarity": 0.25,
+          "timings": {
+            "diffMs": 0.09999990463256836,
+            "parseMs": 0.7000000476837158,
+            "similarityMs": 0
+          },
+          "sizeBytes": 1441
+        }
+      ],
+      "linkStats": {
+        "total": 1,
+        "analyzed": 1
+      },
+      "linkMetrics": [
+        {
+          "url": "https://iana.org/help/example-domains",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114084252",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114084252/https://www.iana.org/help/example-domains"
+            },
+            "durationMs": 393.7999999523163
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "wikipedia-main",
+    "url": "https://en.wikipedia.org/wiki/Main_Page",
+    "success": true,
+    "analysis": {
+      "snapshot": {
+        "timestamp": "20261114092419",
+        "statusCode": "200"
+      },
+      "timings": {
+        "pageMs": 20.200000047683716,
+        "snapshotLookupMs": 522.3999999761581,
+        "snapshotDownloadMs": 682.2000000476837,
+        "differsMs": 108.79999995231628,
+        "linkLookupsMs": 138627.60000002384,
+        "totalMs": 139966.10000002384
+      },
+      "differMetrics": [
+        {
+          "algorithm": "myers-word",
+          "label": "minor",
+          "similarity": 0.9150124069478908,
+          "timings": {
+            "diffMs": 5.199999928474426,
+            "parseMs": 60,
+            "similarityMs": 0
+          },
+          "sizeBytes": 18691
+        },
+        {
+          "algorithm": "myers-block",
+          "label": "minor",
+          "similarity": 0.9797047970479705,
+          "timings": {
+            "diffMs": 0.2999999523162842,
+            "parseMs": 43.200000047683716,
+            "similarityMs": 0
+          },
+          "sizeBytes": 14967
+        }
+      ],
+      "linkStats": {
+        "total": 50,
+        "analyzed": 49
+      },
+      "linkMetrics": [
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114045921",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114045921/https://en.wikipedia.org/wiki/Wikipedia"
+            },
+            "durationMs": 1465.6000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9992569324821833,
+                "timings": {
+                  "parseMs": 357.89999997615814,
+                  "similarityMs": 0.8000000715255737
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9792899408284024,
+                "timings": {
+                  "parseMs": 285.6999999284744,
+                  "similarityMs": 0.30000007152557373
+                }
+              }
+            ],
+            "durationMs": 3533.600000023842,
+            "timings": {
+              "diffMs": 644.7000000476837,
+              "liveFetchMs": 855.3000000715256,
+              "snapshotDownloadMs": 2031.5,
+              "totalMs": 3533.600000023842
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Free_content",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261111005352",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261111005352/https://en.wikipedia.org/wiki/Free_content"
+            },
+            "durationMs": 1760
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 58.10000002384186,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 54.299999952316284,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 1207.1000000238419,
+            "timings": {
+              "diffMs": 112.5,
+              "liveFetchMs": 47.60000002384186,
+              "snapshotDownloadMs": 1044.8999999761581,
+              "totalMs": 1207.1000000238419
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Help:Introduction_to_Wikipedia",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261111010903",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261111010903/https://en.wikipedia.org/wiki/Help:Introduction_to_Wikipedia"
+            },
+            "durationMs": 10474.900000095367
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 11.5,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 10.200000047683716,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 895.3999999761581,
+            "timings": {
+              "diffMs": 21.700000047683716,
+              "liveFetchMs": 26.399999976158142,
+              "snapshotDownloadMs": 845.8999999761581,
+              "totalMs": 895.3999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Special:Statistics",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261111025157",
+              "statusCode": "301",
+              "snapshotUrl": "https://web.archive.org/web/20261111025157/http://en.wikipedia.org/wiki/Special:Statistics"
+            },
+            "durationMs": 544.1000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9564164648910412,
+                "timings": {
+                  "parseMs": 10.100000023841858,
+                  "similarityMs": 0.20000004768371582
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.8881987577639752,
+                "timings": {
+                  "parseMs": 9.699999928474426,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 1657.8000000715256,
+            "timings": {
+              "diffMs": 20.200000047683716,
+              "liveFetchMs": 415.1999999284744,
+              "snapshotDownloadMs": 1220.2999999523163,
+              "totalMs": 1657.8000000715256
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/English_language",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261113172401",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261113172401/https://en.wikipedia.org/wiki/English_language"
+            },
+            "durationMs": 5320.100000023842
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 263.09999990463257,
+                  "similarityMs": 0.40000009536743164
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 321.2999999523163,
+                  "similarityMs": 0.20000004768371582
+                }
+              }
+            ],
+            "durationMs": 2560.2000000476837,
+            "timings": {
+              "diffMs": 585.1000000238419,
+              "liveFetchMs": 64.39999997615814,
+              "snapshotDownloadMs": 1909.3999999761581,
+              "totalMs": 2560.2000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/File:Volc%C3%A1n_Aucanquilcha,_Chile,_2016-02-10,_DD_11.JPG",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20260411135912",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20260411135912/https://en.wikipedia.org/wiki/File:Volc%C3%A1n_Aucanquilcha,_Chile,_2016-02-10,_DD_11.JPG"
+            },
+            "durationMs": 1057.3999999761581
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.8825831702544031,
+                "timings": {
+                  "parseMs": 32.5,
+                  "similarityMs": 7.5
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.7800687285223368,
+                "timings": {
+                  "parseMs": 19,
+                  "similarityMs": 0.9000000953674316
+                }
+              }
+            ],
+            "durationMs": 1813.3000000715256,
+            "timings": {
+              "diffMs": 60,
+              "liveFetchMs": 628.5,
+              "snapshotDownloadMs": 1122.2000000476837,
+              "totalMs": 1813.3000000715256
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Aucanquilcha",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114045826",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114045826/https://en.wikipedia.org/wiki/Aucanquilcha"
+            },
+            "durationMs": 752.5
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9979391560353288,
+                "timings": {
+                  "parseMs": 100.30000007152557,
+                  "similarityMs": 0.3999999761581421
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9875,
+                "timings": {
+                  "parseMs": 147.70000004768372,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 2424.5,
+            "timings": {
+              "diffMs": 248.40000009536743,
+              "liveFetchMs": 559.1000000238419,
+              "snapshotDownloadMs": 1615.1999999284744,
+              "totalMs": 2424.5
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Complex_volcano",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114161056",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114161056/https://en.wikipedia.org/wiki/Complex_volcano"
+            },
+            "durationMs": 795.1000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 21.200000047683716,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 29,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1609.3000000715256,
+            "timings": {
+              "diffMs": 50.200000047683716,
+              "liveFetchMs": 743.1000000238419,
+              "snapshotDownloadMs": 813.2999999523163,
+              "totalMs": 1609.3000000715256
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Ice_age",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261109192037",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261109192037/https://en.wikipedia.org/wiki/Ice_age"
+            },
+            "durationMs": 419.2999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 87.30000007152557,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 77.29999995231628,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1646.7999999523163,
+            "timings": {
+              "diffMs": 164.70000004768372,
+              "liveFetchMs": 552.3000000715256,
+              "snapshotDownloadMs": 927.5999999046326,
+              "totalMs": 1646.7999999523163
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Ice_cap",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261028005442",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261028005442/https://en.wikipedia.org/wiki/Ice_cap"
+            },
+            "durationMs": 678.3999999761581
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 46.5,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 25.300000071525574,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1116.8000000715256,
+            "timings": {
+              "diffMs": 71.80000007152557,
+              "liveFetchMs": 539.5,
+              "snapshotDownloadMs": 502.1999999284744,
+              "totalMs": 1116.8000000715256
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Moraine",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261025104255",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261025104255/https://en.wikipedia.org/wiki/Moraine"
+            },
+            "durationMs": 894.1000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 42.39999997615814,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 45,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1063.8999999761581,
+            "timings": {
+              "diffMs": 87.5,
+              "liveFetchMs": 550.6999999284744,
+              "snapshotDownloadMs": 423.5,
+              "totalMs": 1063.8999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Cirque",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261108210440",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261108210440/https://en.wikipedia.org/wiki/Cirque"
+            },
+            "durationMs": 944.8999999761581
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 48.5,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 24,
+                  "similarityMs": 0.19999992847442627
+                }
+              }
+            ],
+            "durationMs": 1204.8999999761581,
+            "timings": {
+              "diffMs": 72.69999992847443,
+              "liveFetchMs": 43.300000071525574,
+              "snapshotDownloadMs": 1086.6000000238419,
+              "totalMs": 1204.8999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Dacite",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261109074005",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261109074005/https://en.wikipedia.org/wiki/Dacite"
+            },
+            "durationMs": 604.3000000715256
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 43,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 30.899999976158142,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1104.2999999523163,
+            "timings": {
+              "diffMs": 74,
+              "liveFetchMs": 555.6000000238419,
+              "snapshotDownloadMs": 470.7999999523163,
+              "totalMs": 1104.2999999523163
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Biotite",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261002124225",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261002124225/https://en.wikipedia.org/wiki/Biotite"
+            },
+            "durationMs": 695
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.998300283286119,
+                "timings": {
+                  "parseMs": 47.10000002384186,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9794520547945206,
+                "timings": {
+                  "parseMs": 25.100000023841858,
+                  "similarityMs": 0.09999990463256836
+                }
+              }
+            ],
+            "durationMs": 1218.3999999761581,
+            "timings": {
+              "diffMs": 72.5,
+              "liveFetchMs": 546.2999999523163,
+              "snapshotDownloadMs": 596.5,
+              "totalMs": 1218.3999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Earth's_crust",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261101154233",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261101154233/https://en.wikipedia.org/wiki/Earth%27s_crust"
+            },
+            "durationMs": 292.3000000715256
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9994441356309061,
+                "timings": {
+                  "parseMs": 39.199999928474426,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9922480620155039,
+                "timings": {
+                  "parseMs": 25.299999952316284,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 2449.5,
+            "timings": {
+              "diffMs": 64.79999995231628,
+              "liveFetchMs": 551.2000000476837,
+              "snapshotDownloadMs": 1830.3999999761581,
+              "totalMs": 2449.5
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Magma_chamber",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20260911233321",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20260911233321/https://en.wikipedia.org/wiki/Magma_chamber"
+            },
+            "durationMs": 344.1999999284744
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9992025518341308,
+                "timings": {
+                  "parseMs": 33.60000002384186,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9791666666666666,
+                "timings": {
+                  "parseMs": 36.699999928474426,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1795.6999999284744,
+            "timings": {
+              "diffMs": 70.39999997615814,
+              "liveFetchMs": 38.5,
+              "snapshotDownloadMs": 1684.5,
+              "totalMs": 1795.6999999284744
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Sulfur",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261108063410",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261108063410/https://en.wikipedia.org/wiki/Sulfur"
+            },
+            "durationMs": 644
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9998755290017426,
+                "timings": {
+                  "parseMs": 225.30000007152557,
+                  "similarityMs": 0.2999999523162842
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9977246871444824,
+                "timings": {
+                  "parseMs": 309.39999997615814,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 1624.6000000238419,
+            "timings": {
+              "diffMs": 535.2000000476837,
+              "liveFetchMs": 575.9000000953674,
+              "snapshotDownloadMs": 511,
+              "totalMs": 1624.6000000238419
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Aerial_tramway",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114125807",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114125807/https://en.wikipedia.org/wiki/Aerial_tramway"
+            },
+            "durationMs": 371.5
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9997255762897914,
+                "timings": {
+                  "parseMs": 68.29999995231628,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9950738916256158,
+                "timings": {
+                  "parseMs": 51.10000002384186,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 880.8000000715256,
+            "timings": {
+              "diffMs": 119.60000002384186,
+              "liveFetchMs": 50.39999997615814,
+              "snapshotDownloadMs": 707.3999999761581,
+              "totalMs": 880.8000000715256
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/2022%E2%80%9323_Notts_County_F.C._season",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261113175215",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261113175215/https://en.wikipedia.org/wiki/2022%E2%80%9323_Notts_County_F.C._season"
+            },
+            "durationMs": 705.6000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9985297998265917,
+                "timings": {
+                  "parseMs": 158.30000007152557,
+                  "similarityMs": 0.3999999761581421
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9871559633027523,
+                "timings": {
+                  "parseMs": 141.10000002384186,
+                  "similarityMs": 0.2999999523162842
+                }
+              }
+            ],
+            "durationMs": 1685.7000000476837,
+            "timings": {
+              "diffMs": 300.2000000476837,
+              "liveFetchMs": 859.2999999523163,
+              "snapshotDownloadMs": 523.0999999046326,
+              "totalMs": 1685.7000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Royal_Gloucestershire_Hussars",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261112021123",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261112021123/https://en.wikipedia.org/wiki/Royal_Gloucestershire_Hussars"
+            },
+            "durationMs": 627
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9971999253313422,
+                "timings": {
+                  "parseMs": 80.79999995231628,
+                  "similarityMs": 0.3999999761581421
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9516129032258065,
+                "timings": {
+                  "parseMs": 70,
+                  "similarityMs": 0.20000004768371582
+                }
+              }
+            ],
+            "durationMs": 1863.2000000476837,
+            "timings": {
+              "diffMs": 151.5,
+              "liveFetchMs": 549.5,
+              "snapshotDownloadMs": 1158.7000000476837,
+              "totalMs": 1863.2000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/U.S._Route_101",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261111150020",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261111150020/https://en.wikipedia.org/wiki/U.S._Route_101"
+            },
+            "durationMs": 267
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9927694050004355,
+                "timings": {
+                  "parseMs": 121.5,
+                  "similarityMs": 1.7999999523162842
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9472222222222222,
+                "timings": {
+                  "parseMs": 145.10000002384186,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 2040.8000000715256,
+            "timings": {
+              "diffMs": 268.5,
+              "liveFetchMs": 652.2000000476837,
+              "snapshotDownloadMs": 1116.3999999761581,
+              "totalMs": 2040.8000000715256
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia:Today's_featured_article/November_2026",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110140013",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110140013/https://en.wikipedia.org/wiki/Wikipedia:Today%27s_featured_article/November_2026"
+            },
+            "durationMs": 1137.4000000953674
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9909602592529422,
+                "timings": {
+                  "parseMs": 66.80000007152557,
+                  "similarityMs": 0.7999999523162842
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9879931389365352,
+                "timings": {
+                  "parseMs": 41,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 3294.399999976158,
+            "timings": {
+              "diffMs": 108.70000004768372,
+              "liveFetchMs": 40.5,
+              "snapshotDownloadMs": 3142.0999999046326,
+              "totalMs": 3294.399999976158
+            }
+          }
+        },
+        {
+          "url": "https://lists.wikimedia.org/postorius/lists/daily-article-l.lists.wikimedia.org/",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110222522",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110222522/https://lists.wikimedia.org/postorius/lists/daily-article-l.lists.wikimedia.org/"
+            },
+            "durationMs": 5604.100000023842
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 6.200000047683716,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 1.2999999523162842,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1175.6999999284744,
+            "timings": {
+              "diffMs": 7.5,
+              "liveFetchMs": 254.70000004768372,
+              "snapshotDownloadMs": 909.4000000953674,
+              "totalMs": 1175.6999999284744
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia:Featured_articles_(linked_from_TFAfooter)",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110140028",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110140028/https://en.wikipedia.org/wiki/Wikipedia:Featured_articles_(linked_from_TFAfooter)"
+            },
+            "durationMs": 3572.7999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9993078626799557,
+                "timings": {
+                  "parseMs": 470,
+                  "similarityMs": 0.6000000238418579
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9836512261580381,
+                "timings": {
+                  "parseMs": 541.3999999761581,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 3396.7999999523163,
+            "timings": {
+              "diffMs": 1012.1999999284744,
+              "liveFetchMs": 701.6999999284744,
+              "snapshotDownloadMs": 1680.4000000953674,
+              "totalMs": 3396.7999999523163
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia:About_Today's_featured_article",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110140134",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110140134/https://en.wikipedia.org/wiki/Wikipedia:About_Today%27s_featured_article"
+            },
+            "durationMs": 14221.5
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 16.199999928474426,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 9.200000047683716,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1837.2000000476837,
+            "timings": {
+              "diffMs": 25.399999976158142,
+              "liveFetchMs": 543.5999999046326,
+              "snapshotDownloadMs": 1265.2000000476837,
+              "totalMs": 1837.2000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/File:Hong_Ban-jang_Boat.jpg",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261007201818",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261007201818/https://en.wikipedia.org/wiki/File:Hong_Ban-jang_Boat.jpg"
+            },
+            "durationMs": 11715
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "major",
+                "similarity": 0.7402376910016978,
+                "timings": {
+                  "parseMs": 18.199999928474426,
+                  "similarityMs": 4.300000071525574
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.6206896551724138,
+                "timings": {
+                  "parseMs": 13.5,
+                  "similarityMs": 0.5999999046325684
+                }
+              }
+            ],
+            "durationMs": 1944.5999999046326,
+            "timings": {
+              "diffMs": 36.59999990463257,
+              "liveFetchMs": 546.7999999523163,
+              "snapshotDownloadMs": 1358.7000000476837,
+              "totalMs": 1944.5999999046326
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Hometown_Cha-Cha-Cha",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261002164421",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261002164421/https://en.wikipedia.org/wiki/Hometown_Cha-Cha-Cha"
+            },
+            "durationMs": 589
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "major",
+                "similarity": 0.6683460309658392,
+                "timings": {
+                  "parseMs": 183.39999997615814,
+                  "similarityMs": 6886.400000095367
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.7200839748075577,
+                "timings": {
+                  "parseMs": 170.5,
+                  "similarityMs": 27.699999928474426
+                }
+              }
+            ],
+            "durationMs": 8573.5,
+            "timings": {
+              "diffMs": 7268.100000023842,
+              "liveFetchMs": 552.5,
+              "snapshotDownloadMs": 749.3000000715256,
+              "totalMs": 8573.5
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Hong_Du-sik",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261027225249",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261027225249/https://en.wikipedia.org/wiki/Hong_Du-sik"
+            },
+            "durationMs": 1177.1999999284744
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9998937526561836,
+                "timings": {
+                  "parseMs": 96.40000009536743,
+                  "similarityMs": 0.19999992847442627
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9965870307167235,
+                "timings": {
+                  "parseMs": 79.80000007152557,
+                  "similarityMs": 0.09999990463256836
+                }
+              }
+            ],
+            "durationMs": 1603.1999999284744,
+            "timings": {
+              "diffMs": 176.5,
+              "liveFetchMs": 558.3999999761581,
+              "snapshotDownloadMs": 864.7999999523163,
+              "totalMs": 1603.1999999284744
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Raoul_Barouch",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20260917205203",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20260917205203/https://en.wikipedia.org/wiki/Raoul_Barouch"
+            },
+            "durationMs": 928.0999999046326
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "major",
+                "similarity": 0.1575037147102526,
+                "timings": {
+                  "parseMs": 27,
+                  "similarityMs": 88.60000002384186
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.4177215189873418,
+                "timings": {
+                  "parseMs": 31.799999952316284,
+                  "similarityMs": 0.5
+                }
+              }
+            ],
+            "durationMs": 670,
+            "timings": {
+              "diffMs": 148,
+              "liveFetchMs": 35.89999997615814,
+              "snapshotDownloadMs": 482.39999997615814,
+              "totalMs": 670
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Henry_Kissinger",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261107111224",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261107111224/https://en.wikipedia.org/wiki/Henry_Kissinger"
+            },
+            "durationMs": 2077.1999999284744
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9998929756341194,
+                "timings": {
+                  "parseMs": 245.09999990463257,
+                  "similarityMs": 0.40000009536743164
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9980295566502463,
+                "timings": {
+                  "parseMs": 300.59999990463257,
+                  "similarityMs": 0.20000004768371582
+                }
+              }
+            ],
+            "durationMs": 2755.7999999523163,
+            "timings": {
+              "diffMs": 546.2999999523163,
+              "liveFetchMs": 579.8999999761581,
+              "snapshotDownloadMs": 1626,
+              "totalMs": 2755.7999999523163
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/1976_Aegean_Crisis",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261007152153",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261007152153/https://en.wikipedia.org/wiki/1976_Aegean_Crisis"
+            },
+            "durationMs": 617.4000000953674
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9986504723346828,
+                "timings": {
+                  "parseMs": 137.39999997615814,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9758454106280193,
+                "timings": {
+                  "parseMs": 23.100000023841858,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 1868,
+            "timings": {
+              "diffMs": 160.60000002384186,
+              "liveFetchMs": 56.799999952316284,
+              "snapshotDownloadMs": 1646.3999999761581,
+              "totalMs": 1868
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Clarembald_of_Broies",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261010012726",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261010012726/https://en.wikipedia.org/wiki/Clarembald_of_Broies"
+            },
+            "durationMs": 4002.2999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9777777777777777,
+                "timings": {
+                  "parseMs": 24.699999928474426,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.88,
+                "timings": {
+                  "parseMs": 15.199999928474426,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 3582.5,
+            "timings": {
+              "diffMs": 40.299999952316284,
+              "liveFetchMs": 50.199999928474426,
+              "snapshotDownloadMs": 3489.3000000715256,
+              "totalMs": 3582.5
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Fatih_Arda_%C4%B0pcio%C4%9Flu",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20251104140233",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20251104140233/https://en.wikipedia.org/wiki/Fatih_Arda_%C4%B0pcio%C4%9Flu"
+            },
+            "durationMs": 2120.899999976158
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9632911392405064,
+                "timings": {
+                  "parseMs": 38.10000002384186,
+                  "similarityMs": 0.3999999761581421
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9585798816568047,
+                "timings": {
+                  "parseMs": 29.5,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 3035.7000000476837,
+            "timings": {
+              "diffMs": 68.10000002384186,
+              "liveFetchMs": 55.60000002384186,
+              "snapshotDownloadMs": 2873.2999999523163,
+              "totalMs": 3035.7000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Flag_of_East_Turkestan",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20260813081103",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20260813081103/https://en.wikipedia.org/wiki/Flag_of_East_Turkestan"
+            },
+            "durationMs": 2659.7999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.8897786151672162,
+                "timings": {
+                  "parseMs": 45.39999997615814,
+                  "similarityMs": 12.400000095367432
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.8284789644012945,
+                "timings": {
+                  "parseMs": 38.59999990463257,
+                  "similarityMs": 0.30000007152557373
+                }
+              }
+            ],
+            "durationMs": 1056.3999999761581,
+            "timings": {
+              "diffMs": 96.70000004768372,
+              "liveFetchMs": 36,
+              "snapshotDownloadMs": 921.2999999523163,
+              "totalMs": 1056.3999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Katie_Zacharia",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114115535",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114115535/https://en.wikipedia.org/wiki/Katie_Zacharia"
+            },
+            "durationMs": 565.8999999761581
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9981289759261569,
+                "timings": {
+                  "parseMs": 62.5,
+                  "similarityMs": 0.19999992847442627
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9888268156424581,
+                "timings": {
+                  "parseMs": 43.700000047683716,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 2776.7000000476837,
+            "timings": {
+              "diffMs": 106.39999997615814,
+              "liveFetchMs": 546,
+              "snapshotDownloadMs": 2120.7000000476837,
+              "totalMs": 2776.7000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/White_House_Press_Secretary",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110162846",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110162846/https://en.wikipedia.org/wiki/White_House_press_secretary"
+            },
+            "durationMs": 841.6000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.999194955051657,
+                "timings": {
+                  "parseMs": 97.29999995231628,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9925452609158679,
+                "timings": {
+                  "parseMs": 73.39999997615814,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1226.1999999284744,
+            "timings": {
+              "diffMs": 170.89999997615814,
+              "liveFetchMs": 32.89999997615814,
+              "snapshotDownloadMs": 1019.7999999523163,
+              "totalMs": 1226.1999999284744
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Eames_House",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261107021320",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261107021320/https://en.wikipedia.org/wiki/Eames_House"
+            },
+            "durationMs": 859.1999999284744
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9888881024842523,
+                "timings": {
+                  "parseMs": 273.3000000715256,
+                  "similarityMs": 6.299999952316284
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9242424242424242,
+                "timings": {
+                  "parseMs": 230.60000002384186,
+                  "similarityMs": 0.3999999761581421
+                }
+              }
+            ],
+            "durationMs": 1644.7000000476837,
+            "timings": {
+              "diffMs": 510.60000002384186,
+              "liveFetchMs": 556.3999999761581,
+              "snapshotDownloadMs": 573.6999999284744,
+              "totalMs": 1644.7000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Charles_Eames",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261102154124",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261102154124/https://en.wikipedia.org/wiki/Charles_Eames"
+            },
+            "durationMs": 569.3000000715256
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.995172968624296,
+                "timings": {
+                  "parseMs": 37,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.951048951048951,
+                "timings": {
+                  "parseMs": 20.700000047683716,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 2011.1000000238419,
+            "timings": {
+              "diffMs": 57.90000009536743,
+              "liveFetchMs": 62.800000071525574,
+              "snapshotDownloadMs": 1886.5999999046326,
+              "totalMs": 2011.1000000238419
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Ray_Eames",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261102154124",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261102154124/https://en.wikipedia.org/wiki/Ray_Eames"
+            },
+            "durationMs": 482.39999997615814
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9981154299175501,
+                "timings": {
+                  "parseMs": 57.700000047683716,
+                  "similarityMs": 0.09999990463256836
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9760956175298805,
+                "timings": {
+                  "parseMs": 49,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 986.5,
+            "timings": {
+              "diffMs": 106.89999997615814,
+              "liveFetchMs": 575.1000000238419,
+              "snapshotDownloadMs": 299.7999999523163,
+              "totalMs": 986.5
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Arnold_Br%C3%BCgger",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20241208013711",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20241208013711/https://en.wikipedia.org/wiki/Arnold_Br%C3%BCgger"
+            },
+            "durationMs": 504
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "major",
+                "similarity": 0.24304141208418195,
+                "timings": {
+                  "parseMs": 23.700000047683716,
+                  "similarityMs": 49.39999997615814
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.3125,
+                "timings": {
+                  "parseMs": 30.600000023841858,
+                  "similarityMs": 0.2999999523162842
+                }
+              }
+            ],
+            "durationMs": 745.7000000476837,
+            "timings": {
+              "diffMs": 104,
+              "liveFetchMs": 119.10000002384186,
+              "snapshotDownloadMs": 518.2999999523163,
+              "totalMs": 745.7000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Scripture_cake",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114154023",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114154023/https://en.wikipedia.org/wiki/Scripture_cake"
+            },
+            "durationMs": 520.2999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 26.600000023841858,
+                  "similarityMs": 0.09999990463256836
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 17.100000023841858,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1655,
+            "timings": {
+              "diffMs": 43.799999952316284,
+              "liveFetchMs": 551.6999999284744,
+              "snapshotDownloadMs": 1055.3999999761581,
+              "totalMs": 1655
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia:Did_you_know_archive",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110140652",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110140652/https://en.wikipedia.org/wiki/Wikipedia:Did_you_know_archive"
+            },
+            "durationMs": 1104.8999999761581
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "major",
+                "similarity": 0.7697947214076246,
+                "timings": {
+                  "parseMs": 57.09999990463257,
+                  "similarityMs": 129.40000009536743
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9155313351498637,
+                "timings": {
+                  "parseMs": 34.699999928474426,
+                  "similarityMs": 0.5
+                }
+              }
+            ],
+            "durationMs": 1643.1999999284744,
+            "timings": {
+              "diffMs": 221.69999992847443,
+              "liveFetchMs": 547.2999999523163,
+              "snapshotDownloadMs": 870.2000000476837,
+              "totalMs": 1643.1999999284744
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Help:Your_first_article",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110140714",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110140714/https://en.wikipedia.org/wiki/Help:Your_first_article"
+            },
+            "durationMs": 406.3000000715256
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 47,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 30,
+                  "similarityMs": 0.09999990463256836
+                }
+              }
+            ],
+            "durationMs": 1842.6999999284744,
+            "timings": {
+              "diffMs": 77.19999992847443,
+              "liveFetchMs": 547.8999999761581,
+              "snapshotDownloadMs": 1214.6000000238419,
+              "totalMs": 1842.6999999284744
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Template_talk:Did_you_know",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261112215839",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261112215839/https://en.wikipedia.org/wiki/Template_talk:Did_you_know"
+            },
+            "durationMs": 1105.1000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.8800375360825794,
+                "timings": {
+                  "parseMs": 542,
+                  "similarityMs": 7873.699999928474
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.8699665764762057,
+                "timings": {
+                  "parseMs": 453.89999997615814,
+                  "similarityMs": 37.5
+                }
+              }
+            ],
+            "durationMs": 12266.099999904633,
+            "timings": {
+              "diffMs": 8907.099999904633,
+              "liveFetchMs": 1655.1000000238419,
+              "snapshotDownloadMs": 1700,
+              "totalMs": 12266.099999904633
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/File:A_tough_gang_of_Spinning_Tops.jpg",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110140738",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110140738/https://en.wikipedia.org/wiki/File:A_tough_gang_of_Spinning_Tops.jpg"
+            },
+            "durationMs": 10943.900000095367
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9823182711198428,
+                "timings": {
+                  "parseMs": 33.700000047683716,
+                  "similarityMs": 0.20000004768371582
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.985207100591716,
+                "timings": {
+                  "parseMs": 16.5,
+                  "similarityMs": 0.09999990463256836
+                }
+              }
+            ],
+            "durationMs": 893.2999999523163,
+            "timings": {
+              "diffMs": 50.59999990463257,
+              "liveFetchMs": 59.5,
+              "snapshotDownloadMs": 780.5,
+              "totalMs": 893.2999999523163
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Spinning_top",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261113184813",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261113184813/https://en.wikipedia.org/wiki/Spinning_top"
+            },
+            "durationMs": 1069.5
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9077119364899348,
+                "timings": {
+                  "parseMs": 102.10000002384186,
+                  "similarityMs": 96.89999997615814
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.7656675749318801,
+                "timings": {
+                  "parseMs": 67.89999997615814,
+                  "similarityMs": 1.7000000476837158
+                }
+              }
+            ],
+            "durationMs": 1212.8999999761581,
+            "timings": {
+              "diffMs": 268.60000002384186,
+              "liveFetchMs": 559.1000000238419,
+              "snapshotDownloadMs": 381,
+              "totalMs": 1212.8999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia:Reliable_sources",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261111082440",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261111082440/https://en.wikipedia.org/wiki/Wikipedia:Reliable_sources"
+            },
+            "durationMs": 985.1000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9997981293318081,
+                "timings": {
+                  "parseMs": 92.69999992847443,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9942028985507246,
+                "timings": {
+                  "parseMs": 69.89999997615814,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 1688,
+            "timings": {
+              "diffMs": 162.79999995231628,
+              "liveFetchMs": 42.299999952316284,
+              "snapshotDownloadMs": 1478.7000000476837,
+              "totalMs": 1688
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Wikipedia:Be_bold",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261112153844",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261112153844/https://en.wikipedia.org/wiki/Wikipedia:Be_bold"
+            },
+            "durationMs": 731.1000000238419
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 39.10000002384186,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 25.399999976158142,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 1690.7000000476837,
+            "timings": {
+              "diffMs": 64.70000004768372,
+              "liveFetchMs": 546.6000000238419,
+              "snapshotDownloadMs": 1074.2999999523163,
+              "totalMs": 1690.7000000476837
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/w/index.php?title=Spinning_top&action=edit",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261111013558",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261111013558/https://en.wikipedia.org/w/index.php?title=Spinning_top&action=edit"
+            },
+            "durationMs": 824.7999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "minor",
+                "similarity": 0.9545454545454546,
+                "timings": {
+                  "parseMs": 12.099999904632568,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "major",
+                "similarity": 0.5,
+                "timings": {
+                  "parseMs": 8.700000047683716,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 819.8999999761581,
+            "timings": {
+              "diffMs": 20.799999952316284,
+              "liveFetchMs": 167.30000007152557,
+              "snapshotDownloadMs": 628,
+              "totalMs": 819.8999999761581
+            }
+          }
+        },
+        {
+          "url": "https://en.wikipedia.org/wiki/Talk:Spinning_top"
+        }
+      ]
+    }
+  },
+  {
+    "id": "google",
+    "url": "https://www.google.com/",
+    "success": true,
+    "analysis": {
+      "snapshot": {
+        "timestamp": "20261114143113",
+        "statusCode": "200"
+      },
+      "timings": {
+        "pageMs": 8.899999976158142,
+        "snapshotLookupMs": 9482.600000023842,
+        "snapshotDownloadMs": 1357.7000000476837,
+        "differsMs": 46.5,
+        "linkLookupsMs": 635.7000000476837,
+        "totalMs": 11532.899999976158
+      },
+      "differMetrics": [
+        {
+          "algorithm": "myers-word",
+          "label": "major",
+          "similarity": 0.47244094488188976,
+          "timings": {
+            "diffMs": 0.20000004768371582,
+            "parseMs": 33.299999952316284,
+            "similarityMs": 0
+          },
+          "sizeBytes": 1155
+        },
+        {
+          "algorithm": "myers-block",
+          "label": "major",
+          "similarity": 0.6666666666666666,
+          "timings": {
+            "diffMs": 0,
+            "parseMs": 12.899999976158142,
+            "similarityMs": 0
+          },
+          "sizeBytes": 1010
+        }
+      ],
+      "linkStats": {
+        "total": 1,
+        "analyzed": 1
+      },
+      "linkMetrics": [
+        {
+          "url": "https://support.google.com/chrome/?p=ui_voice_search",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261023170422",
+              "statusCode": "301",
+              "snapshotUrl": "https://web.archive.org/web/20261023170422/https://support.google.com/chrome/?p=ui_voice_search"
+            },
+            "durationMs": 634.5
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "mit",
+    "url": "https://www.mit.edu/",
+    "success": true,
+    "analysis": {
+      "snapshot": {
+        "timestamp": "20261112195710",
+        "statusCode": "200"
+      },
+      "timings": {
+        "pageMs": 4.899999976158142,
+        "snapshotLookupMs": 657.1000000238419,
+        "snapshotDownloadMs": 646.1000000238419,
+        "differsMs": 22.399999976158142,
+        "linkLookupsMs": 35509.89999997616,
+        "totalMs": 36842.10000002384
+      },
+      "differMetrics": [
+        {
+          "algorithm": "myers-word",
+          "label": "major",
+          "similarity": 0.7488,
+          "timings": {
+            "diffMs": 2.200000047683716,
+            "parseMs": 12.799999952316284,
+            "similarityMs": 0
+          },
+          "sizeBytes": 4621
+        },
+        {
+          "algorithm": "myers-block",
+          "label": "major",
+          "similarity": 0.5806451612903226,
+          "timings": {
+            "diffMs": 0,
+            "parseMs": 7.200000047683716,
+            "similarityMs": 0
+          },
+          "sizeBytes": 3210
+        }
+      ],
+      "linkStats": {
+        "total": 14,
+        "analyzed": 14
+      },
+      "linkMetrics": [
+        {
+          "url": "https://www.mit.edu/resources/",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261008122824",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261008122824/https://www.mit.edu/resources/"
+            },
+            "durationMs": 414.7999999523163
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 27.600000023841858,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 7.199999928474426,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 784.8999999761581,
+            "timings": {
+              "diffMs": 34.89999997615814,
+              "liveFetchMs": 106.40000009536743,
+              "snapshotDownloadMs": 642.7999999523163,
+              "totalMs": 784.8999999761581
+            }
+          }
+        },
+        {
+          "url": "https://www.mit.edu/parents",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20260722035634",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20260722035634/https://www.mit.edu/parents/"
+            },
+            "durationMs": 686.1999999284744
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://www.mit.edu/parents/",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9948927477017364,
+                "timings": {
+                  "parseMs": 13.799999952316284,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 0.9908256880733946,
+                "timings": {
+                  "parseMs": 9.600000023841858,
+                  "similarityMs": 0.10000002384185791
+                }
+              }
+            ],
+            "durationMs": 611.2000000476837,
+            "timings": {
+              "diffMs": 23.700000047683716,
+              "liveFetchMs": 58.700000047683716,
+              "snapshotDownloadMs": 527.6000000238419,
+              "totalMs": 611.2000000476837
+            }
+          }
+        },
+        {
+          "url": "https://www.mit.edu/resources",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261008122824",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261008122824/https://www.mit.edu/resources/"
+            },
+            "durationMs": 602.2000000476837
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://www.mit.edu/resources/",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 23.5,
+                  "similarityMs": 0.09999990463256836
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 12.5,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 61.199999928474426,
+            "timings": {
+              "diffMs": 36.09999990463257,
+              "liveFetchMs": 21.300000071525574,
+              "snapshotDownloadMs": 2.3000000715255737,
+              "totalMs": 61.199999928474426
+            }
+          }
+        },
+        {
+          "url": "https://www.mit.edu/response-government-activity",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261009065913",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261009065913/https://www.mit.edu/response-government-activity/"
+            },
+            "durationMs": 1132.7999999523163
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://www.mit.edu/response-government-activity/",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 23.300000071525574,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 11.099999904632568,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 634.1999999284744,
+            "timings": {
+              "diffMs": 34.5,
+              "liveFetchMs": 67.5,
+              "snapshotDownloadMs": 530.7999999523163,
+              "totalMs": 634.1999999284744
+            }
+          }
+        },
+        {
+          "url": "http://news.mit.edu/2026/helping-robots-fit-into-human-workplace-1113",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261114082441",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261114082441/https://news.mit.edu/2026/helping-robots-fit-into-human-workplace-1113"
+            },
+            "durationMs": 2024.7000000476837
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://news.mit.edu/2026/helping-robots-fit-into-human-workplace-1113",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 25.699999928474426,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 27.800000071525574,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1362.6000000238419,
+            "timings": {
+              "diffMs": 53.60000002384186,
+              "liveFetchMs": 859.8999999761581,
+              "snapshotDownloadMs": 447.39999997615814,
+              "totalMs": 1362.6000000238419
+            }
+          }
+        },
+        {
+          "url": "https://www.robust.ai/",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110080931",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110080931/https://www.robust.ai/"
+            },
+            "durationMs": 885
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 0.9949494949494949,
+                "timings": {
+                  "parseMs": 38.699999928474426,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "minor",
+                "similarity": 0.9615384615384616,
+                "timings": {
+                  "parseMs": 32.200000047683716,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 3371.9000000953674,
+            "timings": {
+              "diffMs": 71,
+              "liveFetchMs": 1655.6000000238419,
+              "snapshotDownloadMs": 1644.5,
+              "totalMs": 3371.9000000953674
+            }
+          }
+        },
+        {
+          "url": "https://www.mit.edu/archive/spotlight/collaborative-robots",
+          "lookup": {
+            "snapshot": null,
+            "durationMs": 421.7999999523163
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://www.mit.edu/archive/spotlight/collaborative-robots/",
+              "status": 200
+            },
+            "skipped": "no snapshot to compare against",
+            "durationMs": 78.70000004768372,
+            "timings": {
+              "liveFetchMs": 78.10000002384186,
+              "totalMs": 78.70000004768372
+            }
+          }
+        },
+        {
+          "url": "http://news.mit.edu/2026/streamlining-metal-parts-production-revitalize-american-industry-fabri-1110",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110121210",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110121210/https://news.mit.edu/2026/streamlining-metal-parts-production-revitalize-american-industry-fabri-1110"
+            },
+            "durationMs": 538.1000000238419
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://news.mit.edu/2026/streamlining-metal-parts-production-revitalize-american-industry-fabri-1110",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 25.199999928474426,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 13.300000071525574,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 1202.8000000715256,
+            "timings": {
+              "diffMs": 38.60000002384186,
+              "liveFetchMs": 559,
+              "snapshotDownloadMs": 603.2999999523163,
+              "totalMs": 1202.8000000715256
+            }
+          }
+        },
+        {
+          "url": "http://news.mit.edu/2026/somebodys-got-to-do-it-why-not-me-andrew-voelsing-1110",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261110082426",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261110082426/https://news.mit.edu/2026/somebodys-got-to-do-it-why-not-me-andrew-voelsing-1110"
+            },
+            "durationMs": 653
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://news.mit.edu/2026/somebodys-got-to-do-it-why-not-me-andrew-voelsing-1110",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 25.600000023841858,
+                  "similarityMs": 0.10000002384185791
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 33,
+                  "similarityMs": 0.09999990463256836
+                }
+              }
+            ],
+            "durationMs": 1270.1999999284744,
+            "timings": {
+              "diffMs": 58.799999952316284,
+              "liveFetchMs": 572.8000000715256,
+              "snapshotDownloadMs": 637.2000000476837,
+              "totalMs": 1270.1999999284744
+            }
+          }
+        },
+        {
+          "url": "http://news.mit.edu/2026/single-ai-model-simulates-many-substances-behavior-1109",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261113054617",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261113054617/https://news.mit.edu/2026/single-ai-model-simulates-many-substances-behavior-1109"
+            },
+            "durationMs": 316.89999997615814
+          },
+          "diff": {
+            "live": {
+              "redirectedTo": "https://news.mit.edu/2026/single-ai-model-simulates-many-substances-behavior-1109",
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 32.5,
+                  "similarityMs": 0.09999990463256836
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 13.300000071525574,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 2143.8000000715256,
+            "timings": {
+              "diffMs": 46,
+              "liveFetchMs": 579,
+              "snapshotDownloadMs": 1516.5,
+              "totalMs": 2143.8000000715256
+            }
+          }
+        },
+        {
+          "url": "https://alum.mit.edu/slice/combat-vet-brings-little-mit-west-point",
+          "lookup": {
+            "snapshot": null,
+            "durationMs": 2009.1999999284744
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "skipped": "no snapshot to compare against",
+            "durationMs": 186.89999997615814,
+            "timings": {
+              "liveFetchMs": 186.40000009536743,
+              "totalMs": 186.89999997615814
+            }
+          }
+        },
+        {
+          "url": "https://news.mit.edu/2026/fact-sheet-supporting-mits-jewish-community",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261015231236",
+              "statusCode": "-",
+              "snapshotUrl": "https://web.archive.org/web/20261015231236/https://news.mit.edu/2026/fact-sheet-supporting-mits-jewish-community"
+            },
+            "durationMs": 492.2000000476837
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 20.700000047683716,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 18.299999952316284,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 860.2999999523163,
+            "timings": {
+              "diffMs": 39.10000002384186,
+              "liveFetchMs": 73.60000002384186,
+              "snapshotDownloadMs": 745.3999999761581,
+              "totalMs": 860.2999999523163
+            }
+          }
+        },
+        {
+          "url": "https://understanding.mit.edu/",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20261015231414",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20261015231414/https://understanding.mit.edu/"
+            },
+            "durationMs": 603.5
+          },
+          "diff": {
+            "live": {
+              "status": 200
+            },
+            "metrics": [
+              {
+                "algorithm": "myers-word",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 17.800000071525574,
+                  "similarityMs": 0
+                }
+              },
+              {
+                "algorithm": "myers-block",
+                "label": "unchanged",
+                "similarity": 1,
+                "timings": {
+                  "parseMs": 5.299999952316284,
+                  "similarityMs": 0
+                }
+              }
+            ],
+            "durationMs": 902.6000000238419,
+            "timings": {
+              "diffMs": 23.200000047683716,
+              "liveFetchMs": 317.7999999523163,
+              "snapshotDownloadMs": 559.6999999284744,
+              "totalMs": 902.6000000238419
+            }
+          }
+        },
+        {
+          "url": "https://www.mit.edu/mit-daily-weekly",
+          "lookup": {
+            "snapshot": {
+              "timestamp": "20260722035800",
+              "statusCode": "200",
+              "snapshotUrl": "https://web.archive.org/web/20260722035800/https://www.mit.edu/mit-daily-weekly/"
+            },
+            "durationMs": 1539.8999999761581
+          }
+        }
+      ]
+    }
+  }
+]

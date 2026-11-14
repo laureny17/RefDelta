@@ -4,16 +4,16 @@
   "success": true,
   "analysis": {
     "snapshot": {
-      "timestamp": "20261112021434",
+      "timestamp": "20261113230533",
       "statusCode": "200"
     },
     "timings": {
-      "pageMs": 5.799999982118607,
-      "snapshotLookupMs": 383.59999999403954,
-      "snapshotDownloadMs": 1333.199999988079,
-      "differsMs": 9.200000017881393,
-      "linkLookupsMs": 1525.5999999940395,
-      "totalMs": 3261
+      "pageMs": 4.600000023841858,
+      "snapshotLookupMs": 803.2000000476837,
+      "snapshotDownloadMs": 887.2000000476837,
+      "differsMs": 5.199999928474426,
+      "linkLookupsMs": 1601.7999999523163,
+      "totalMs": 3303.899999976158
     },
     "differMetrics": [
       {
@@ -21,8 +21,8 @@
         "label": "major",
         "similarity": 0.31645569620253167,
         "timings": {
-          "diffMs": 1,
-          "parseMs": 5.799999982118607,
+          "diffMs": 0.6000000238418579,
+          "parseMs": 3.6999999284744263,
           "similarityMs": 0
         },
         "sizeBytes": 1695
@@ -32,8 +32,8 @@
         "label": "major",
         "similarity": 0.25,
         "timings": {
-          "diffMs": 0.20000001788139343,
-          "parseMs": 2,
+          "diffMs": 0.09999990463256836,
+          "parseMs": 0.7000000476837158,
           "similarityMs": 0
         },
         "sizeBytes": 1441
@@ -48,35 +48,11 @@
         "url": "https://iana.org/help/example-domains",
         "lookup": {
           "snapshot": {
-            "timestamp": "20261110064816",
+            "timestamp": "20261114084252",
             "statusCode": "200",
-            "snapshotUrl": "https://web.archive.org/web/20261110064816/https://www.iana.org/help/example-domains"
+            "snapshotUrl": "https://web.archive.org/web/20261114084252/https://www.iana.org/help/example-domains"
           },
-          "durationMs": 264.40000000596046
-        },
-        "diff": {
-          "live": {
-            "redirectedTo": "https://www.iana.org/help/example-domains",
-            "status": 200
-          },
-          "metrics": [
-            {
-              "algorithm": "myers-word",
-              "label": "unchanged",
-              "similarity": 1,
-              "timings": {
-                "parseMs": 6.0999999940395355,
-                "similarityMs": 0.09999999403953552
-              }
-            }
-          ],
-          "durationMs": 485.69999998807907,
-          "timings": {
-            "diffMs": 6.199999988079071,
-            "liveFetchMs": 163.39999997615814,
-            "snapshotDownloadMs": 315.5,
-            "totalMs": 485.69999998807907
-          }
+          "durationMs": 393.7999999523163
         }
       }
     ]
