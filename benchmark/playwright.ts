@@ -1,7 +1,7 @@
 // Playwright-based end-to-end benchmark
 // Runs the actual extension in a real browser and collects metrics
 // Run with: npm run benchmark:playwright [OPTIONS]
-//   --algorithms ALGO1,ALGO2: Comma-separated list of algorithms (default: myers-word,myers-block)
+//   --algorithms ALGO1,ALGO2: Comma-separated list of algorithms (default: myers-word,myers-block,buld,buld-word-refined)
 //   --modes MODE1,MODE2: Comma-separated list of modes: similarity,diff (default: both)
 //   --name NAME: Custom name for output files (default: "latest")
 //   --full-l1-diffs: DEPRECATED - use --modes diff instead
@@ -183,9 +183,9 @@ async function analyzeUrl(
     }, tabId);
 
     // Set analysis config in storage before triggering analysis
-    await serviceWorker.evaluate((config) => {
-      chrome.storage.session.set({ analysisConfig: config });
-    }, { algorithms, modes });
+    await serviceWorker.evaluate(async (config) => {
+      await chrome.storage.session.set({ analysisConfig: config });
+    }, { algorithms, useFullL1Diffs: modes?.[0] === 'diff' });
 
     if (!triggered) {
       const extensionId = await serviceWorker.evaluate(() => chrome.runtime.id);
@@ -273,7 +273,10 @@ async function analyzeUrl(
       const allLinksLookedUp = linksStarted &&
         analysis.linksToLookUp!.length === Object.keys(analysis.linkLookups || {}).length;
       const linksStopped = analysis.linkLookupsStopped !== undefined;
-      const linksDone = linksStarted && (allLinksLookedUp || linksStopped);
+      const pendingDiffs = Object.entries(analysis.linkLookups || {}).some(([url, lookup]) =>
+        lookup && typeof lookup === 'object' && 'snapshot' in lookup && !analysis.linkDiffs?.[url]
+      );
+      const linksDone = linksStarted && (allLinksLookedUp || linksStopped) && !pendingDiffs;
 
       if (snapshotDone && differsDone && linksDone) {
         console.log(`       ✅ Complete!`);
@@ -356,7 +359,7 @@ async function analyzeUrl(
                         ? { algorithm: m.algorithm, error: m.error }
                         : {
                             algorithm: m.algorithm,
-                            mode: m.mode,
+                            mode: modes?.[0] ?? 'similarity',
                             label: m.label,
                             similarity: m.similarity,
                             timings: {
@@ -438,7 +441,7 @@ async function runPlaywrightBenchmark(
   modes?: ('similarity' | 'diff')[]
 ) {
   console.log('=== Playwright End-to-End Benchmark ===\n');
-  console.log(`Algorithms: ${algorithms ? algorithms.join(', ') : 'all (myers-word, myers-block)'}`);
+  console.log(`Algorithms: ${algorithms ? algorithms.join(', ') : 'all (myers-word, myers-block, buld, buld-word-refined)'}`);
   console.log(`Modes: ${modes ? modes.join(', ') : 'both (similarity, diff)'}`);
   console.log(`Output name: ${outputName}\n`);
 
@@ -584,7 +587,7 @@ const outputName = nameIndex !== -1 && process.argv[nameIndex + 1]
 const algorithmsIndex = process.argv.indexOf('--algorithms');
 const algorithms = algorithmsIndex !== -1 && process.argv[algorithmsIndex + 1]
   ? process.argv[algorithmsIndex + 1].split(',')
-  : undefined; // undefined = run all algorithms (myers-word, myers-block)
+  : undefined; // undefined = run all algorithms (myers-word, myers-block, buld, buld-word-refined)
 
 const modesIndex = process.argv.indexOf('--modes');
 let modes: ('similarity' | 'diff')[] | undefined;
@@ -596,4 +599,18 @@ if (modesIndex !== -1 && process.argv[modesIndex + 1]) {
   modes = undefined; // undefined = run both modes
 }
 
-runPlaywrightBenchmark(outputName, algorithms, modes).catch(console.error);
+async function runSelectedModes() {
+  const selectedModes = [...new Set(modes ?? ['similarity', 'diff'])];
+  if (selectedModes.length === 0 || selectedModes.some(mode => mode !== 'similarity' && mode !== 'diff')) {
+    throw new Error('--modes must contain similarity, diff, or similarity,diff');
+  }
+  for (const mode of selectedModes) {
+    const name = selectedModes.length > 1 ? `${outputName}-${mode}` : outputName;
+    await runPlaywrightBenchmark(name, algorithms, [mode]);
+  }
+}
+
+runSelectedModes().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

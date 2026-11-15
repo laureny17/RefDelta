@@ -44,9 +44,7 @@ export function extract(doc: Document, pageUrl: string, options: ExtractOptions 
   if (!doc.body) {
     return { url: pageUrl, title: doc.title.trim(), blocks: [], text: '', links: [], malformed: [], images: [], boilerplate: { blocks: [], links: [], images: [] } };
   }
-  // copy so we don't modify the real page; script/style/hidden elements and Wayback's toolbar aren't content at all
-  const page = doc.body.cloneNode(true) as Element;
-  for (const el of page.querySelectorAll(`${NON_CONTENT}, ${WAYBACK_INJECTED}`)) el.remove();
+  const page = cleanPage(doc)!;
 
   // step 2's classification runs BEFORE step 1 splits the page, so it sees the whole page like in the paper
   const classified = kohlschutter ? findBoilerplate(page) : [];
@@ -78,12 +76,20 @@ const BOILERPLATE =
 // snapshot with the "id_" URL flag, e.g. web.archive.org/web/<timestamp>id_/<url>)
 const WAYBACK_INJECTED = '#wm-ipp-base, #wm-ipp, #donato';
 
+// Shared by text extraction and structural differs; never mutate the live document.
+export function cleanPage(doc: Document): Element | null {
+  if (!doc.body) return null;
+  const page = doc.body.cloneNode(true) as Element;
+  for (const el of page.querySelectorAll(`${NON_CONTENT}, ${WAYBACK_INJECTED}`)) el.remove();
+  return page;
+}
+
 // split `page` (already a cleaned copy; modified in place) into
 //   main: the page's own content, and
 //   boilerplate: the site chrome removed from it (in page order, except boilerplate found inside <main> comes last)
 // simple tag/role-based heuristic (step 1 above; Kohlschütter's classifier is step 2)
 // TODO: benchmark none vs. tags vs. tags + Kohlschütter and see how each changes diff results
-function splitContent(page: Element, doc: Document): { main: Element; boilerplate: Element } {
+export function splitContent(page: Element, doc: Document): { main: Element; boilerplate: Element } {
   // if the page marks its main content, use only that; everything else on the page is boilerplate
   const main = page.querySelector('main, [role="main"]');
   let root = page;

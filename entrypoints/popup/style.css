@@ -177,3 +177,8 @@ details[data-key='links'] ol {
 .link-status.error {
   background: rgba(248, 81, 73, 0.4);
 }
+
+.diff-preview .move {
+  color: #6d4aff;
+  background: #eee8ff;
+}

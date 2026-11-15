@@ -3,6 +3,7 @@
 
 import type { Differ, Timings } from './diff/differ';
 import type { Representation } from './diff/diff-interfaces';
+import { BuldDiffer } from './diff/buld';
 import { MyersDiffer } from './diff/myers';
 import type { PreviewRun } from './diff/preview';
 import type { AnalysisConfig } from './analysis';
@@ -19,6 +20,8 @@ export interface DiffStrategy {
 const ALL_STRATEGIES: DiffStrategy[] = [
   { L0: new MyersDiffer('word'), L1: new MyersDiffer('word') },
   { L0: new MyersDiffer('block'), L1: new MyersDiffer('block') },
+  { L0: new BuldDiffer(), L1: new BuldDiffer() },
+  { L0: new BuldDiffer({ refineText: true }), L1: new BuldDiffer({ refineText: true }) },
 ];
 
 // filter strategies based on config

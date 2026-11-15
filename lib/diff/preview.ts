@@ -3,7 +3,7 @@
 
 // one stretch of text that's all unchanged, all inserted, or all deleted
 export interface PreviewRun {
-  op: 'equal' | 'insert' | 'delete';
+  op: 'equal' | 'insert' | 'delete' | 'move';
   text: string;
 }
 
