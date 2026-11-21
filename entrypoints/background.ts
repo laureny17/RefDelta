@@ -2,6 +2,7 @@ import { analysisKey, CONFIG_KEY, type Analysis, type AnalysisConfig, type LinkL
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS, measureL0Diffs } from '@/lib/metrics';
+import { RunControl } from '@/lib/runControl';
 import { fetchSnapshotHtml, findSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
@@ -11,8 +12,13 @@ import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit
 //       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
 const MAX_LINKS = 50;
 
-// mapping for the current analysis run for each tab (tabId -> runId)
-const currentRun = new Map<number, number>();
+// the current analysis run for each tab
+interface Run {
+  runId: number;
+  control: RunControl; // pause / resume / stop
+  update: (changes: Partial<Analysis>) => Promise<void>; // saves changes to the run's results
+}
+const currentRun = new Map<number, Run>();
 let nextRunId = 0;
 
 // runs the analysis in the background so it keeps going after the popup closes
@@ -25,6 +31,8 @@ export default defineBackground(() => {
       const l0Algorithm = L0_ALGORITHMS.includes(msg.l0Algorithm) ? msg.l0Algorithm : DEFAULT_L0_ALGORITHM;
       const l1Algorithm = L1_ALGORITHMS.includes(msg.l1Algorithm) ? msg.l1Algorithm : DEFAULT_L1_ALGORITHM;
       analyzeTab(msg.tabId, date, { l0Algorithm, l1Algorithm });
+    } else if (msg.type === 'pause-tab' || msg.type === 'resume-tab' || msg.type === 'stop-tab') {
+      controlTab(msg.tabId, msg.type);
     }
   });
 
@@ -39,8 +47,35 @@ export default defineBackground(() => {
 // TEMPORARY: using storage.session for now;
 // TODO: replace/complement with IndexedDB
 function clearTab(tabId: number) {
+  currentRun.get(tabId)?.control.stop(); // releases anything waiting on a pause
   currentRun.delete(tabId);
   browser.storage.session.remove(analysisKey(tabId));
+}
+
+// pause / resume / stop the tab's current run (from the popup's buttons)
+async function controlTab(tabId: number, action: 'pause-tab' | 'resume-tab' | 'stop-tab') {
+  const run = currentRun.get(tabId);
+  if (!run) {
+    // no run in memory (e.g. the service worker was restarted), so there's nothing to resume:
+    // mark saved results as stopped so the popup doesn't stay stuck on paused/running
+    const key = analysisKey(tabId);
+    const saved = (await browser.storage.session.get(key))[key] as Analysis | undefined;
+    if (saved && (saved.runState === 'running' || saved.runState === 'paused')) {
+      await browser.storage.session.set({ [key]: { ...saved, runState: 'stopped' } });
+    }
+    return;
+  }
+  if (run.control.stopped) return;
+  if (action === 'pause-tab') {
+    run.control.pause();
+    await run.update({ runState: 'paused' });
+  } else if (action === 'resume-tab') {
+    run.control.resume();
+    await run.update({ runState: 'running' });
+  } else {
+    run.control.stop();
+    await run.update({ runState: 'stopped' });
+  }
 }
 
 // analyze a single tab, saving results to storage.session as they become available
@@ -49,10 +84,12 @@ function clearTab(tabId: number) {
 async function analyzeTab(tabId: number, requestedDate: string | undefined, selected: Pick<AnalysisConfig, 'l0Algorithm' | 'l1Algorithm'>) {
   const key = analysisKey(tabId);
   const runId = ++nextRunId;
-  currentRun.set(tabId, runId);
-  // clear old results first
-  await browser.storage.session.remove(key);
-  const isCurrent = () => currentRun.get(tabId) === runId;
+  currentRun.get(tabId)?.control.stop(); // a previous run on this tab (e.g. paused) stops starting new work
+  const control = new RunControl(() => void browser.runtime.getPlatformInfo());
+  // registered right away, so the previous run's in-flight requests stop saving immediately
+  const run: Run = { runId, control, update: async () => {} }; // `update` is filled in once the results object exists
+  currentRun.set(tabId, run);
+  const isCurrent = () => currentRun.get(tabId)?.runId === runId;
 
   // extra settings from a benchmark run (set in storage by benchmark/playwright.ts), if any; its `algorithms`
   // overrides the popup's selected differs (the benchmark clicks the popup's Start button with the selects' defaults)
@@ -65,7 +102,13 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
   const times: Times = {};
 
   // accumulated results; each update merges in new fields and re-saves the whole thing
-  const analysis: Analysis = { times, requestedDate, l0Algorithm: config.l0Algorithm, l1Algorithm: config.l1Algorithm };
+  const analysis: Analysis = {
+    runState: 'running',
+    times,
+    requestedDate,
+    l0Algorithm: config.l0Algorithm,
+    l1Algorithm: config.l1Algorithm,
+  };
   const update = async (changes: Partial<Analysis>) => {
     Object.assign(analysis, changes);
     times.total = performance.now() - start;
@@ -73,6 +116,11 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
     // only save if this run is still current (else outdated: tab navigated/closed, or Analyze re-clicked)
     if (isCurrent()) await browser.storage.session.set({ [key]: analysis });
   };
+  run.update = update;
+  // a run that ends on its own is done (unless the user stopped it, which already saved 'stopped')
+  const finish = (changes: Partial<Analysis> = {}) => update({ ...changes, ...(!control.stopped && { runState: 'done' }) });
+  // replace the old results with this run's (so far empty) ones, so the popup sees it's running
+  await update({});
 
   let livePage: PageContent;
   let liveHtml: string; // kept here only, not saved with the results (too big to re-save on every update)
@@ -82,7 +130,7 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
       browser.tabs.sendMessage(tabId, { type: 'analyze' }),
     ));
   } catch (err) {
-    await update({ error: `Could not analyze page: ${err}` });
+    await finish({ error: `Could not analyze page: ${err}` });
     return;
   }
   await update({ livePage }); // links ready; snapshot still pending
@@ -109,13 +157,18 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
     }
   }
 
+  // pausing/stopping takes effect here at the earliest: the L0 page (a few requests) always finishes
+  await control.waitIfPaused();
+  if (control.stopped) return;
+
   // Anchor every L1 lookup to the actual L0 capture so all archived pages are from as close to
   // the same moment as Wayback can provide.
   const linksToLookUp = livePage.links.slice(0, MAX_LINKS);
   linksStart = performance.now();
   await update({ linksToLookUp, linkLookups: {}, linkDiffs: {} });
 
-  await analyzeLinks(linksToLookUp, snapshot?.timestamp, analysis, update, isCurrent, config);
+  await analyzeLinks(linksToLookUp, snapshot?.timestamp, analysis, update, isCurrent, config, control);
+  await finish();
 }
 
 // run `fn`, recording how long it took (wall-clock) in times[step], even if it throws
@@ -159,6 +212,7 @@ async function analyzeLinks(
   update: (changes: Partial<Analysis>) => Promise<void>,
   isCurrent: () => boolean,
   config: AnalysisConfig,
+  control: RunControl,
 ) {
   let rateLimitHit = false;
 
@@ -195,11 +249,12 @@ async function analyzeLinks(
   };
 
   // start one lookup per free slot (without waiting for it to finish); stop starting new ones once
-  // this run is outdated or a 429 came back
+  // this run is outdated, stopped, or a 429 came back. while paused, wait (lookups already sent keep going)
   const lookupPromises: Promise<void>[] = [];
   for (const link of linksToLookUp) {
     await waitForFreeSlot('lookup');
-    if (!isCurrent() || rateLimitHit) break;
+    await control.waitIfPaused();
+    if (!isCurrent() || control.stopped || rateLimitHit) break;
     lookupPromises.push(lookUpLink(link));
   }
 

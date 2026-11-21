@@ -1,5 +1,5 @@
 import './style.css';
-import { analysisKey, type Analysis } from '@/lib/analysis';
+import { analysisKey, type Analysis, type RunState } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
@@ -44,7 +44,12 @@ app.innerHTML = `
     <label for="l1-algorithm">Link algorithm</label>
     <select id="l1-algorithm">${options(L1_ALGORITHMS)}</select>
   </div>
-  <button id="analyze" type="button">Start</button>
+  <div class="run-buttons">
+    <button id="analyze" type="button">Start</button>
+    <button id="pause" type="button" hidden>Pause</button>
+    <button id="resume" type="button" hidden>Resume</button>
+    <button id="stop" type="button" hidden>Stop</button>
+  </div>
   <div id="output"></div>
 `;
 
@@ -54,6 +59,10 @@ const l0Select = document.querySelector<HTMLSelectElement>('#l0-algorithm')!;
 const l1Select = document.querySelector<HTMLSelectElement>('#l1-algorithm')!;
 l0Select.value = DEFAULT_L0_ALGORITHM;
 l1Select.value = DEFAULT_L1_ALGORITHM;
+const startButton = document.querySelector<HTMLButtonElement>('#analyze')!; // id kept: benchmark/playwright.ts clicks it
+const pauseButton = document.querySelector<HTMLButtonElement>('#pause')!;
+const resumeButton = document.querySelector<HTMLButtonElement>('#resume')!;
+const stopButton = document.querySelector<HTMLButtonElement>('#stop')!;
 
 // one <option> per algorithm name
 function options(names: string[]): string {
@@ -86,7 +95,7 @@ browser.storage.session.onChanged.addListener((changes) => {
   if (changes[key]) render(changes[key].newValue as Analysis | undefined);
 });
 
-document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click', () => {
+startButton.addEventListener('click', () => {
   output.textContent = 'Analyzing...';
   browser.runtime.sendMessage({
     type: 'analyze-tab',
@@ -97,7 +106,25 @@ document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click',
   });
 });
 
+// the background saves the new runState right away, and render() swaps the buttons when it arrives
+pauseButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'pause-tab', tabId }));
+resumeButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'resume-tab', tabId }));
+stopButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'stop-tab', tabId }));
+
+// buttons follow the SAVED run state (not anything local to the popup), so reopening the popup mid-run shows the right ones:
+//   no run / done / stopped: Start; running: Pause + Stop; paused: Resume + Stop
+// the date + algorithm selects are locked during a run, so they always match what's running
+function renderRunControls(runState: RunState | undefined) {
+  const active = runState === 'running' || runState === 'paused';
+  startButton.hidden = active;
+  pauseButton.hidden = runState !== 'running';
+  resumeButton.hidden = runState !== 'paused';
+  stopButton.hidden = !active;
+  for (const input of [dateInput, l0Select, l1Select]) input.disabled = active;
+}
+
 function render(analysis: Analysis | undefined) {
+  renderRunControls(analysis?.runState);
   if (!analysis) return; // not analyzed yet
   // Don't overwrite a date while the user is editing it as background progress re-renders.
   if (document.activeElement !== dateInput) dateInput.value = analysis.requestedDate ?? '';
@@ -113,7 +140,11 @@ function render(analysis: Analysis | undefined) {
     output.replaceChildren();
     return;
   }
-  const livePage = analysis.livePage!;
+  if (!analysis.livePage) {
+    output.textContent = 'Analyzing...'; // run started; live page not parsed yet
+    return;
+  }
+  const livePage = analysis.livePage;
   const title = document.createElement('p');
   title.textContent = livePage.title;
 
@@ -222,7 +253,9 @@ function linkItem(link: string, { label, details }: LinkStatus): (string | Node)
 
 // a link's status: its result if it has one, otherwise the step it's on (see LinkPhase in lib/analysis.ts)
 function linkStatus(link: string, analysis: Analysis): LinkStatus {
-  const { linkPhases = {}, linkLookups = {}, linkDiffs = {}, linkLookupsStopped: stopped } = analysis;
+  const { linkPhases = {}, linkLookups = {}, linkDiffs = {} } = analysis;
+  // links that never got a result because lookups stopped (Wayback rate limit, or the user's stop button)
+  const stopped = analysis.linkLookupsStopped ?? (analysis.runState === 'stopped' ? 'stopped by user' : undefined);
   if (!analysis.linksToLookUp?.includes(link)) {
     return { label: 'not checked', details: [`only the first ${analysis.linksToLookUp?.length ?? 0} links are checked`] };
   }

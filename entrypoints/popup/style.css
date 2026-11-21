@@ -51,6 +51,12 @@ h1 {
   font: inherit;
 }
 
+.run-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
