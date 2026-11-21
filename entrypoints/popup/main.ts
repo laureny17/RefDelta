@@ -22,7 +22,6 @@ const STATUS_KINDS = {
   'not diffed': 'skipped',
   'failed': 'error',
   'stopped': 'stopped', // lookups stopped (e.g. Wayback rate limit) before this link finished
-  'not checked': 'stopped', // beyond the links we look up (MAX_LINKS in background.ts)
 } as const;
 const STATUS_LABELS = Object.keys(STATUS_KINDS) as StatusLabel[];
 type StatusLabel = keyof typeof STATUS_KINDS;
@@ -126,7 +125,7 @@ function renderRunControls(runState: RunState | undefined) {
   for (const input of [dateInput, l0Select, l1Select]) input.disabled = active;
 }
 
-// L1 progress, e.g. "38/50 links · ~30 s left" (+ "(first 50 of 212 on the page)" when capped by MAX_LINKS).
+// L1 progress, e.g. "38/50 links · ~30 s left".
 // shown whenever there are links to check, with or without SHOW_DEV_METRICS
 function renderProgress(analysis: Analysis | undefined) {
   const links = analysis?.linksToLookUp;
@@ -137,8 +136,6 @@ function renderProgress(analysis: Analysis | undefined) {
   // a link is finished once it has a diff result, or its lookup failed (then it's never diffed)
   const finished = links.filter((link) => linkDiffs[link] || 'error' in (linkLookups[link] ?? {})).length;
   let text = `${finished}/${links.length} links`;
-  const onPage = analysis.livePage?.links.length ?? links.length;
-  if (onPage > links.length) text += ` (first ${links.length} of ${onPage} on the page)`;
 
   if (analysis.runState === 'paused') text += ' · paused';
   else if (analysis.runState === 'running') {
@@ -290,8 +287,9 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
   const { linkPhases = {}, linkLookups = {}, linkDiffs = {} } = analysis;
   // links that never got a result because lookups stopped (Wayback rate limit, or the user's stop button)
   const stopped = analysis.linkLookupsStopped ?? (analysis.runState === 'stopped' ? 'stopped by user' : undefined);
-  if (!analysis.linksToLookUp?.includes(link)) {
-    return { label: 'not checked', details: [`only the first ${analysis.linksToLookUp?.length ?? 0} links are checked`] };
+  // L1 lookups only start after the page's own snapshot lookup + diff
+  if (!analysis.linksToLookUp) {
+    return { label: 'waiting: lookup', details: ["waiting for the page's own snapshot + diff to finish first"] };
   }
 
   const phase = linkPhases[link];

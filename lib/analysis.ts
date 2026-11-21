@@ -27,7 +27,7 @@ export interface Analysis {
   snapshotError?: string;
   differMetrics?: DifferMetrics[]; // each differ run on (snapshot, live page); undefined = not done yet
   metricsError?: string; // e.g. snapshot HTML couldn't be fetched
-  linksToLookUp?: string[]; // the L1 links we'll look up snapshots for (capped; see MAX_LINKS)
+  linksToLookUp?: string[]; // the L1 links we'll look up snapshots for (every link on the page); set when the L1 stage starts
   linkPhases?: Record<string, LinkPhase>; // keyed by link URL: the step each link is on; missing = not started (waiting for a rate-limit slot)
   linkLookups?: Record<string, LinkLookup>; // keyed by link URL; missing = not looked up yet
   linkLookupsStopped?: string; // why link lookups stopped early (e.g. Wayback rate limit)
