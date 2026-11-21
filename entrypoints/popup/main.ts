@@ -1,6 +1,7 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
+import { L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
 import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
@@ -30,18 +31,30 @@ interface LinkStatus {
   details: (string | Node)[]; // shown after the URL
 }
 
-// TODO: change extension to show results as overlay rather than through extension popup
+// the popup is just the analysis controls; results will be shown on the page itself (overlay).
+// with SHOW_DEV_METRICS on, the dev metrics are shown underneath the controls
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <h1>RefDelta</h1>
-  <label for="snapshot-date">Compare against date (optional)</label>
-  <input id="snapshot-date" type="date">
-  <button id="analyze" type="button">Analyze this page</button>
+  <div class="controls">
+    <label for="snapshot-date">Compare against date</label>
+    <input id="snapshot-date" type="date" title="optional; leave empty for the latest snapshot">
+    <label for="l0-algorithm">Page algorithm</label>
+    <select id="l0-algorithm">${options(L0_ALGORITHMS)}</select>
+    <label for="l1-algorithm">Link algorithm</label>
+    <select id="l1-algorithm">${options(L1_ALGORITHMS)}</select>
+  </div>
+  <button id="analyze" type="button">Start</button>
   <div id="output"></div>
 `;
 
 const output = document.querySelector<HTMLDivElement>('#output')!;
 const dateInput = document.querySelector<HTMLInputElement>('#snapshot-date')!;
+
+// one <option> per algorithm name
+function options(names: string[]): string {
+  return names.map((name) => `<option value="${name}">${name}</option>`).join('');
+}
 
 // display of results in popup is a TEMPORARY feature
 // background script does the work and saves results to storage.session -> closing the popup doesn't stop analysis
@@ -82,6 +95,11 @@ function render(analysis: Analysis | undefined) {
     output.textContent = analysis.error;
     return;
   }
+  // everything below is dev-only output (results will move to the overlay)
+  if (!SHOW_DEV_METRICS) {
+    output.replaceChildren();
+    return;
+  }
   const livePage = analysis.livePage!;
   const title = document.createElement('p');
   title.textContent = livePage.title;
@@ -101,8 +119,8 @@ function render(analysis: Analysis | undefined) {
   output.replaceChildren(
     title,
     snapshotLine(analysis),
-    // dev-only: step timings + stats from running each differ on the snapshot vs the live page
-    ...(SHOW_DEV_METRICS ? [timesSection(analysis), metricsSection(analysis, open)] : []),
+    timesSection(analysis),
+    metricsSection(analysis, open), // stats from running each differ on the snapshot vs the live page
     expandableList('links', linksLabel, livePage.links.map((link, i) => linkItem(link, statuses[i]!)), open),
     expandableList(
       'malformed',

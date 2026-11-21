@@ -21,6 +21,10 @@ const ALL_STRATEGIES: DiffStrategy[] = [
   { L0: new MyersDiffer('block'), L1: new MyersDiffer('block') },
 ];
 
+// names of every L0 / L1 differ, for the popup's algorithm selects
+export const L0_ALGORITHMS = uniqueByName(ALL_STRATEGIES.map((s) => s.L0)).map((d) => d.name);
+export const L1_ALGORITHMS = uniqueByName(ALL_STRATEGIES.map((s) => s.L1)).map((d) => d.name);
+
 // filter strategies based on config
 function getStrategies(config?: AnalysisConfig): DiffStrategy[] {
   if (!config?.algorithms || config.algorithms.length === 0) {
