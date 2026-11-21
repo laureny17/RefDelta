@@ -1,5 +1,6 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
+import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import type { LinkDiff } from '@/lib/linkDiff';
 import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
@@ -100,8 +101,8 @@ function render(analysis: Analysis | undefined) {
   output.replaceChildren(
     title,
     snapshotLine(analysis),
-    timesSection(analysis),
-    metricsSection(analysis, open), // stats from running each differ on the snapshot vs the live page
+    // dev-only: step timings + stats from running each differ on the snapshot vs the live page
+    ...(SHOW_DEV_METRICS ? [timesSection(analysis), metricsSection(analysis, open)] : []),
     expandableList('links', linksLabel, livePage.links.map((link, i) => linkItem(link, statuses[i]!)), open),
     expandableList(
       'malformed',
