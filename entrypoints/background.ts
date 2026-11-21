@@ -6,12 +6,6 @@ import { RunControl } from '@/lib/runControl';
 import { fetchSnapshotHtml, findSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
-// max number of L1 links to look up per page (pretty arbitrarily chosen for now)
-// note that Wayback lookups are limited to 24/min (see waybackRateLimit.ts)
-// TODO: which links should we analyze? should there be a "smart" way to determine which ones to look into, if we're being selective?
-//       should we even cap? should we look into distributing work so we don't face rate-limiting issues?
-const MAX_LINKS = 50;
-
 // the current analysis run for each tab
 interface Run {
   runId: number;
@@ -163,7 +157,9 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
 
   // Anchor every L1 lookup to the actual L0 capture so all archived pages are from as close to
   // the same moment as Wayback can provide.
-  const linksToLookUp = livePage.links.slice(0, MAX_LINKS);
+  // every L1 link, in page order (lookups are paced at 24/min, so a page with many links takes a while;
+  // the popup shows progress + time left, and the user can pause/stop)
+  const linksToLookUp = livePage.links;
   linksStart = performance.now();
   await update({ linksToLookUp, linkLookups: {}, linkDiffs: {} });
 

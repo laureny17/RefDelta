@@ -206,10 +206,13 @@ async function analyzeUrl(
     const analysisKey = `analysis:${tabId}`;
     let analysis: any = null;
     let attempts = 0;
-    const maxAttempts = 120; // 2 minutes max
+    // every L1 link is looked up (no cap), at 2.5 s per lookup (24/min; LOOKUP_INTERVAL_MS in lib/waybackRateLimit.ts),
+    // so the time limit grows with the page's link count once it's known: 2 min + 2.5 s per link
+    const maxAttempts = () => 120 + Math.ceil((analysis?.linksToLookUp?.length ?? 0) * 2.5);
     let lastStatus = '';
+    let complete = false;
 
-    while (attempts < maxAttempts) {
+    while (attempts < maxAttempts()) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       attempts++;
 
@@ -264,21 +267,16 @@ async function analyzeUrl(
         lastStatus = status;
       }
 
-      // Check if analysis is complete
-      const snapshotDone = analysis.snapshot !== undefined;
-      const differsDone = !analysis.snapshot || analysis.differMetrics !== undefined || analysis.metricsError !== undefined;
-
-      // Links are done when: stopped, or all links looked up
-      const linksStarted = analysis.linksToLookUp !== undefined;
-      const allLinksLookedUp = linksStarted &&
-        analysis.linksToLookUp!.length === Object.keys(analysis.linkLookups || {}).length;
-      const linksStopped = analysis.linkLookupsStopped !== undefined;
-      const linksDone = linksStarted && (allLinksLookedUp || linksStopped);
-
-      if (snapshotDone && differsDone && linksDone) {
+      // complete once the background marks the run finished: every lookup AND every L1 diff settled
+      // (incl. failing, or stopping on a Wayback rate limit; see RunState in lib/analysis.ts)
+      if (analysis.runState === 'done' || analysis.runState === 'stopped') {
+        complete = true;
         console.log(`       ✅ Complete!`);
         break;
       }
+    }
+    if (analysis && !complete) {
+      console.log(`       ⚠️  Timed out after ${attempts}s; saving partial results`);
     }
 
     if (!analysis) {
