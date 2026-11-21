@@ -6,6 +6,7 @@ import type { LinkDiff } from '@/lib/linkDiff';
 import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
+import { LOOKUP_INTERVAL_MS } from '@/lib/waybackRateLimit';
 
 // each L1 link's status, shown as a badge at the start of its line (and counted in the links heading, in this order).
 // `kind` picks the badge color (see .link-status in style.css)
@@ -50,6 +51,7 @@ app.innerHTML = `
     <button id="resume" type="button" hidden>Resume</button>
     <button id="stop" type="button" hidden>Stop</button>
   </div>
+  <p id="progress" hidden></p>
   <div id="output"></div>
 `;
 
@@ -63,6 +65,7 @@ const startButton = document.querySelector<HTMLButtonElement>('#analyze')!; // i
 const pauseButton = document.querySelector<HTMLButtonElement>('#pause')!;
 const resumeButton = document.querySelector<HTMLButtonElement>('#resume')!;
 const stopButton = document.querySelector<HTMLButtonElement>('#stop')!;
+const progress = document.querySelector<HTMLParagraphElement>('#progress')!;
 
 // one <option> per algorithm name
 function options(names: string[]): string {
@@ -123,8 +126,39 @@ function renderRunControls(runState: RunState | undefined) {
   for (const input of [dateInput, l0Select, l1Select]) input.disabled = active;
 }
 
+// L1 progress, e.g. "38/50 links · ~30 s left" (+ "(first 50 of 212 on the page)" when capped by MAX_LINKS).
+// shown whenever there are links to check, with or without SHOW_DEV_METRICS
+function renderProgress(analysis: Analysis | undefined) {
+  const links = analysis?.linksToLookUp;
+  progress.hidden = !links;
+  if (!analysis || !links) return;
+  const { linkPhases = {}, linkLookups = {}, linkDiffs = {} } = analysis;
+
+  // a link is finished once it has a diff result, or its lookup failed (then it's never diffed)
+  const finished = links.filter((link) => linkDiffs[link] || 'error' in (linkLookups[link] ?? {})).length;
+  let text = `${finished}/${links.length} links`;
+  const onPage = analysis.livePage?.links.length ?? links.length;
+  if (onPage > links.length) text += ` (first ${links.length} of ${onPage} on the page)`;
+
+  if (analysis.runState === 'paused') text += ' · paused';
+  else if (analysis.runState === 'running') {
+    // each link waits for one lookup slot (24/min), which is the bottleneck; the rest (live fetch, snapshot download
+    // at ~456/min, diffing) mostly overlaps with later lookups. optimistic: other tabs' lookups share the same clock
+    const notStarted = links.filter((link) => !linkPhases[link]).length;
+    text += notStarted > 0 ? `, ~${roughDuration(notStarted * LOOKUP_INTERVAL_MS)} left` : ' · finishing…';
+  }
+  progress.textContent = text;
+}
+
+// "~40 s" under a minute (to the nearest 5s), otherwise whole minutes rounded up ("~7 min")
+function roughDuration(ms: number): string {
+  const s = ms / 1000;
+  return s < 60 ? `${Math.max(5, Math.round(s / 5) * 5)} s` : `${Math.ceil(s / 60)} min`;
+}
+
 function render(analysis: Analysis | undefined) {
   renderRunControls(analysis?.runState);
+  renderProgress(analysis);
   if (!analysis) return; // not analyzed yet
   // Don't overwrite a date while the user is editing it as background progress re-renders.
   if (document.activeElement !== dateInput) dateInput.value = analysis.requestedDate ?? '';

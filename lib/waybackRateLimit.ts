@@ -33,6 +33,10 @@ const INTERVAL_MS: Record<WaybackRequestKind, number> = {
   download: 60_000 / (480 - 24),
 };
 
+// time between lookups: each L1 link takes one lookup, so this sets how fast links get checked
+// (the popup uses it to estimate time left)
+export const LOOKUP_INTERVAL_MS = INTERVAL_MS.lookup;
+
 // how long to pause after a 429 if the server doesn't send a Retry-After header
 const DEFAULT_PAUSE_MS = 10 * 60 * 1000; // 10 min
 

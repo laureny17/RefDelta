@@ -51,6 +51,12 @@ h1 {
   font: inherit;
 }
 
+#progress {
+  margin: 0 0 0.75rem;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
 .run-buttons {
   display: flex;
   gap: 0.5rem;
