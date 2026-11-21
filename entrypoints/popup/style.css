@@ -95,25 +95,37 @@ button:focus-visible {
   }
 }
 
-/* TEMPORARY: time + differ metrics sections (see timesSection, metricsSection in main.ts) */
-.times,
-.differ-metrics {
-  text-align: left;
-}
-.times table,
-.differ-metrics table {
-  border-collapse: collapse;
+/* DEV ONLY: dev metrics box (see devMetricsBox in main.ts) */
+.dev-metrics {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 8px;
   font-size: 0.85em;
 }
-.times td,
-.differ-metrics th,
-.differ-metrics td {
-  padding: 2px 8px;
-  white-space: nowrap;
+.dev-metrics table {
+  width: 100%;
+  border-collapse: collapse;
 }
-.times td:last-child {
-  white-space: normal; /* let the descriptions wrap */
-  opacity: 0.7;
+.dev-metrics th {
+  padding: 0.5rem 0 0.15rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+}
+.dev-metrics tr:first-child th {
+  padding-top: 0; /* no gap above the first group */
+}
+.dev-metrics td {
+  padding: 1px 0;
+  vertical-align: top;
+}
+.dev-metrics td:first-child {
+  padding-right: 1rem;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.dev-metrics details {
+  margin-top: 0.4rem;
 }
 .diff-preview {
   white-space: pre-wrap;
@@ -134,7 +146,7 @@ button:focus-visible {
 
 /* TEMPORARY: L1 link list, one status badge at the start of each line (see linkItem in main.ts) */
 details[data-key='links'] ol {
-  text-align: left;
+  padding-left: 1.5em;
 }
 .link-status {
   display: inline-block;
