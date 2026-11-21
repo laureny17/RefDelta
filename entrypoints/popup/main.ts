@@ -1,7 +1,7 @@
 import './style.css';
 import { analysisKey, type Analysis } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
-import { L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
+import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
 import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
@@ -50,6 +50,10 @@ app.innerHTML = `
 
 const output = document.querySelector<HTMLDivElement>('#output')!;
 const dateInput = document.querySelector<HTMLInputElement>('#snapshot-date')!;
+const l0Select = document.querySelector<HTMLSelectElement>('#l0-algorithm')!;
+const l1Select = document.querySelector<HTMLSelectElement>('#l1-algorithm')!;
+l0Select.value = DEFAULT_L0_ALGORITHM;
+l1Select.value = DEFAULT_L1_ALGORITHM;
 
 // one <option> per algorithm name
 function options(names: string[]): string {
@@ -84,13 +88,22 @@ browser.storage.session.onChanged.addListener((changes) => {
 
 document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click', () => {
   output.textContent = 'Analyzing...';
-  browser.runtime.sendMessage({ type: 'analyze-tab', tabId, date: dateInput.value || undefined });
+  browser.runtime.sendMessage({
+    type: 'analyze-tab',
+    tabId,
+    date: dateInput.value || undefined,
+    l0Algorithm: l0Select.value,
+    l1Algorithm: l1Select.value,
+  });
 });
 
 function render(analysis: Analysis | undefined) {
   if (!analysis) return; // not analyzed yet
   // Don't overwrite a date while the user is editing it as background progress re-renders.
   if (document.activeElement !== dateInput) dateInput.value = analysis.requestedDate ?? '';
+  // show which differs the shown results came from
+  if (analysis.l0Algorithm && document.activeElement !== l0Select) l0Select.value = analysis.l0Algorithm;
+  if (analysis.l1Algorithm && document.activeElement !== l1Select) l1Select.value = analysis.l1Algorithm;
   if (analysis.error) {
     output.textContent = analysis.error;
     return;

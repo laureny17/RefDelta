@@ -1,7 +1,7 @@
 import { analysisKey, CONFIG_KEY, type Analysis, type AnalysisConfig, type LinkLookup, type Times } from '@/lib/analysis';
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
-import { measureL0Diffs } from '@/lib/metrics';
+import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS, measureL0Diffs } from '@/lib/metrics';
 import { fetchSnapshotHtml, findSnapshot, type Snapshot } from '@/lib/wayback';
 import { WaybackRateLimitedError, waitForFreeSlot } from '@/lib/waybackRateLimit';
 
@@ -21,7 +21,10 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'analyze-tab') {
       const date = typeof msg.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(msg.date) ? msg.date : undefined;
-      analyzeTab(msg.tabId, date);
+      // unknown/missing names fall back to the defaults
+      const l0Algorithm = L0_ALGORITHMS.includes(msg.l0Algorithm) ? msg.l0Algorithm : DEFAULT_L0_ALGORITHM;
+      const l1Algorithm = L1_ALGORITHMS.includes(msg.l1Algorithm) ? msg.l1Algorithm : DEFAULT_L1_ALGORITHM;
+      analyzeTab(msg.tabId, date, { l0Algorithm, l1Algorithm });
     }
   });
 
@@ -43,7 +46,7 @@ function clearTab(tabId: number) {
 // analyze a single tab, saving results to storage.session as they become available
 // TEMPORARY: using storage.session for now;
 // TODO: replace/complement with IndexedDB
-async function analyzeTab(tabId: number, requestedDate?: string) {
+async function analyzeTab(tabId: number, requestedDate: string | undefined, selected: Pick<AnalysisConfig, 'l0Algorithm' | 'l1Algorithm'>) {
   const key = analysisKey(tabId);
   const runId = ++nextRunId;
   currentRun.set(tabId, runId);
@@ -51,9 +54,10 @@ async function analyzeTab(tabId: number, requestedDate?: string) {
   await browser.storage.session.remove(key);
   const isCurrent = () => currentRun.get(tabId) === runId;
 
-  // Read analysis config (for benchmarking different L1 diff modes)
+  // extra settings from a benchmark run (set in storage by benchmark/playwright.ts), if any; its `algorithms`
+  // overrides the popup's selected differs (the benchmark clicks the popup's Start button with the selects' defaults)
   const configData = await browser.storage.session.get(CONFIG_KEY);
-  const config: AnalysisConfig = configData[CONFIG_KEY] || {};
+  const config: AnalysisConfig = { ...selected, ...(configData[CONFIG_KEY] as Partial<AnalysisConfig> | undefined) };
 
   // wall-clock time of each step (see Times); total and linkLookups are refreshed on every update
   const start = performance.now();
@@ -61,7 +65,7 @@ async function analyzeTab(tabId: number, requestedDate?: string) {
   const times: Times = {};
 
   // accumulated results; each update merges in new fields and re-saves the whole thing
-  const analysis: Analysis = { times, requestedDate };
+  const analysis: Analysis = { times, requestedDate, l0Algorithm: config.l0Algorithm, l1Algorithm: config.l1Algorithm };
   const update = async (changes: Partial<Analysis>) => {
     Object.assign(analysis, changes);
     times.total = performance.now() - start;
@@ -99,7 +103,7 @@ async function analyzeTab(tabId: number, requestedDate?: string) {
   if (snapshot) {
     try {
       const snapshotHtml = await timed(times, 'snapshotDownload', () => fetchSnapshotHtml(snapshot));
-      await update({ differMetrics: await timed(times, 'differs', async () => measureL0Diffs(snapshotHtml, liveHtml)) });
+      await update({ differMetrics: await timed(times, 'differs', async () => measureL0Diffs(snapshotHtml, liveHtml, config)) });
     } catch (err) {
       await update({ metricsError: `${err}` });
     }

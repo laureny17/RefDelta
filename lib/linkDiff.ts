@@ -62,7 +62,7 @@ export async function diffLink(
   link: string,
   snapshot: Snapshot | null,
   onPhase: (phase: LinkDiffPhase) => void = () => {},
-  config: AnalysisConfig = {},
+  config: AnalysisConfig,
 ): Promise<LinkDiff> {
   const start = performance.now();
   const durationMs = () => performance.now() - start;
