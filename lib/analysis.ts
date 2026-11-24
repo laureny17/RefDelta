@@ -64,6 +64,13 @@ export type LinkLookup =
   | { snapshot: Snapshot | null; durationMs: number }
   | { error: string; durationMs: number };
 
+// sent from the background to the tab's content script on every save, so the overlay (L1 link badges) can update
+// (content scripts can't read storage.session in Firefox, which doesn't support storage.session.setAccessLevel)
+export interface AnalysisUpdateMessage {
+  type: 'analysis-update';
+  analysis: Analysis;
+}
+
 // TEMPORARY: per-tab results are stored in storage.session (cleared when the browser closes)
 // TODO: replace/complement with IndexedDB
 export function analysisKey(tabId: number): string {

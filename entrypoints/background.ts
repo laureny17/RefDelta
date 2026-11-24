@@ -1,4 +1,4 @@
-import { analysisKey, CONFIG_KEY, type Analysis, type AnalysisConfig, type LinkLookup, type Times } from '@/lib/analysis';
+import { analysisKey, CONFIG_KEY, type Analysis, type AnalysisUpdateMessage, type AnalysisConfig, type LinkLookup, type Times } from '@/lib/analysis';
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS, measureL0Diffs } from '@/lib/metrics';
@@ -46,6 +46,15 @@ function clearTab(tabId: number) {
   browser.storage.session.remove(analysisKey(tabId));
 }
 
+// save a tab's results (for the popup, which watches storage) and send them to the tab (for the overlay's badges)
+// TODO: both happen on every progress change; throttle if it gets expensive on pages with many links
+async function save(tabId: number, analysis: Analysis) {
+  await browser.storage.session.set({ [analysisKey(tabId)]: analysis });
+  const message: AnalysisUpdateMessage = { type: 'analysis-update', analysis };
+  // fails if the tab has no content script (e.g. a browser page) or is mid-navigation; the overlay just misses that update
+  browser.tabs.sendMessage(tabId, message).catch(() => {});
+}
+
 // pause / resume / stop the tab's current run (from the popup's buttons)
 async function controlTab(tabId: number, action: 'pause-tab' | 'resume-tab' | 'stop-tab') {
   const run = currentRun.get(tabId);
@@ -55,7 +64,7 @@ async function controlTab(tabId: number, action: 'pause-tab' | 'resume-tab' | 's
     const key = analysisKey(tabId);
     const saved = (await browser.storage.session.get(key))[key] as Analysis | undefined;
     if (saved && (saved.runState === 'running' || saved.runState === 'paused')) {
-      await browser.storage.session.set({ [key]: { ...saved, runState: 'stopped' } });
+      await save(tabId, { ...saved, runState: 'stopped' });
     }
     return;
   }
@@ -108,7 +117,7 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
     times.total = performance.now() - start;
     if (linksStart !== undefined) times.linkLookups = performance.now() - linksStart;
     // only save if this run is still current (else outdated: tab navigated/closed, or Analyze re-clicked)
-    if (isCurrent()) await browser.storage.session.set({ [key]: analysis });
+    if (isCurrent()) await save(tabId, analysis);
   };
   run.update = update;
   // a run that ends on its own is done (unless the user stopped it, which already saved 'stopped')

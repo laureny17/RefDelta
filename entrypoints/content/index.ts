@@ -1,11 +1,22 @@
+import './overlay.css'; // injected through the manifest (see overlay.css)
+import type { AnalysisUpdateMessage } from '@/lib/analysis';
 import { extract } from '@/lib/parse/extract';
+import { LinkHighlights } from './highlights';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
   main() {
-    // run on extension's "Analyze" button
+    const highlights = new LinkHighlights();
+
     browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+      // the background re-sends the analysis on every saved change
+      if (msg.type === 'analysis-update') {
+        highlights.update((msg as AnalysisUpdateMessage).analysis);
+        return;
+      }
+      // run on extension's Start button
       if (msg.type === 'analyze') {
+        highlights.clear(); // so a re-run starts from the page without the previous run's overlay
         // parsing + link filtering live in lib/parse/ (shared with snapshot parsing)
         // TODO: this reads the open tab, i.e. the page AFTER its JavaScript ran (comments, related
         //       articles, etc. that scripts added), but snapshots are raw HTML from Wayback, i.e. BEFORE any JavaScript

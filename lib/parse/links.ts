@@ -84,8 +84,9 @@ function withoutWww(hostname: string): string {
 // query params added by ad/analytics platforms that don't change page content
 const TRACKING_PARAMS = ['fbclid', 'gclid']; // TODO: add more tracking params to exclude as needed
 
-// strip the #fragment and tracking params so equivalent URLs compare equal
-function normalize(url: URL): string {
+// strip the #fragment and tracking params so equivalent URLs compare equal.
+// exported so the overlay can match the live page's <a> elements to L1 links
+export function normalize(url: URL): string {
   url.hash = '';
   for (const key of [...url.searchParams.keys()]) {
     if (key.startsWith('utm_') || TRACKING_PARAMS.includes(key)) {

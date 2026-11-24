@@ -1,0 +1,78 @@
+/* the overlay drawn on top of the analyzed page: L1 link highlights + their hover details (see highlights.ts).
+   injected through the manifest, so page Content Security Policies can't block it. only matches our own
+   refdelta-* elements, so it doesn't change any page. `all: initial` + !important keep the page's CSS out */
+
+refdelta-overlay,
+refdelta-mark,
+refdelta-tooltip,
+refdelta-tooltip-title,
+refdelta-tooltip-line {
+  all: initial !important;
+}
+
+/* a 0x0 layer at the top-left of the page; everything in it is positioned in page coordinates */
+refdelta-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 2147483647 !important;
+  pointer-events: none !important; /* clicks + hovers go through to the page (hover details come from the links) */
+}
+
+/* a highlighter-style tint over one line of a link. scored links get their color inline, from the similarity
+   (red -> green; see spectrumColor in highlights.ts); the rest are styled by kind below */
+refdelta-mark {
+  position: absolute !important;
+  box-sizing: border-box !important;
+  border-radius: 3px !important;
+  /* must be set again here (`all: initial` resets it): without it, marks sit on top of the links and block
+     clicks + hovers */
+  pointer-events: none !important;
+}
+refdelta-mark[data-kind='rot'] {
+  background-color: hsla(0, 85%, 50%, 0.35) !important;
+}
+refdelta-mark[data-kind='skipped'],
+refdelta-mark[data-kind='failed'] {
+  background-color: rgba(129, 139, 152, 0.3) !important;
+}
+refdelta-mark[data-kind='pending'] {
+  border: 1.5px dashed rgba(129, 139, 152, 0.7) !important;
+}
+refdelta-mark[data-kind='stopped'] {
+  background-color: rgba(129, 139, 152, 0.15) !important;
+}
+
+/* a hovered link's details */
+refdelta-tooltip {
+  position: absolute !important;
+  pointer-events: none !important; /* see refdelta-mark */
+  width: max-content !important; /* else it shrinks to the 0-wide layer */
+  max-width: 320px !important;
+  padding: 6px 8px !important;
+  border-radius: 6px !important;
+  background: #1f2328 !important;
+  color: #f0f6fc !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  font: 12px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+}
+/* `all: initial` stops these from inheriting the tooltip's font + color, so set them again */
+refdelta-tooltip-title,
+refdelta-tooltip-line {
+  font: inherit !important;
+  color: inherit !important;
+}
+refdelta-tooltip-title {
+  display: block !important;
+  font-weight: 600 !important;
+}
+refdelta-tooltip-line {
+  display: block !important;
+  color: #9198a1 !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* `all: initial` would otherwise override the hidden attribute */
+refdelta-tooltip[hidden] {
+  display: none !important;
+}
