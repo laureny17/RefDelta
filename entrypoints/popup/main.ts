@@ -3,7 +3,6 @@ import { analysisKey, type Analysis, type RunState } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
-import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
 import { LOOKUP_INTERVAL_MS } from '@/lib/waybackRateLimit';
@@ -175,91 +174,81 @@ function render(analysis: Analysis | undefined) {
     output.textContent = 'Analyzing...'; // run started; live page not parsed yet
     return;
   }
-  const livePage = analysis.livePage;
-  const title = document.createElement('p');
-  title.textContent = livePage.title;
+  // re-renders on every saved result, so remember which <details> were expanded
+  const open = new Set([...output.querySelectorAll<HTMLDetailsElement>('details[open]')].map((d) => d.dataset.key));
+  output.replaceChildren(devMetricsBox(analysis, analysis.livePage.links, open));
+}
 
-  // re-renders on every saved result, so remember which lists were expanded
-  const open = new Set(
-    [...output.querySelectorAll<HTMLDetailsElement>('details[open]')].map((d) => d.dataset.key),
-  );
+// DEV ONLY (SHOW_DEV_METRICS): overall metrics for the run, as one table of grouped rows
+// (time per step, the L0 differ's stats, L1 totals), then collapsible L0 diff preview(s) + the per-link list.
+// per-link metrics will move next to each link's badge in the overlay
+function devMetricsBox(analysis: Analysis, links: string[], open: Set<string | undefined>): HTMLElement {
+  const { times = {}, totalDurationMs, linkDiffs = {} } = analysis;
+  const box = document.createElement('section');
+  box.className = 'dev-metrics';
+  const table = document.createElement('table');
 
-  // links heading: how many links have each status, e.g. "50 links: 12 diffed · 2 link rot · 30 waiting: lookup"
-  const statuses = livePage.links.map((link) => linkStatus(link, analysis));
+  addGroup(table, 'Snapshot', [['L0 snapshot', snapshotText(analysis)]]);
+
+  // wall-clock time of each step (see Times in lib/analysis.ts); "–" = not done yet
+  addGroup(table, 'Time', [
+    ['total', ms(times.total)],
+    ['live page parse', ms(times.page)],
+    ['snapshot lookup', ms(times.snapshotLookup)],
+    ['snapshot download', ms(times.snapshotDownload)], // incl. waiting for a rate-limit slot
+    ['L0 diff', ms(times.differs)],
+    ['L1 stage', ms(times.linkLookups)], // first L1 lookup started -> latest lookup/diff finished, incl. waits
+  ]);
+
+  addGroup(table, `L0 · ${analysis.l0Algorithm ?? '?'}`, l0Rows(analysis));
+
+  // L1 totals: links by status, then time per link (diffed links only, since others skip the download + compute)
+  const statuses = links.map((link) => linkStatus(link, analysis));
   const counts = STATUS_LABELS.map((label) => [label, statuses.filter((s) => s.label === label).length] as const)
     .filter(([, n]) => n > 0)
     .map(([label, n]) => `${n} ${label.toLowerCase()}`);
-  const linksLabel = `${livePage.links.length} links${counts.length ? `: ${counts.join(' · ')}` : ''}`;
+  const diffed = Object.values(linkDiffs).filter((d) => 'metrics' in d);
+  const computeTotal = diffed.reduce((sum, d) => sum + computeMs(d), 0);
+  const l1Rows: Row[] = [
+    ['links', `${links.length}${counts.length ? `: ${counts.join(' · ')}` : ''}`],
+    // each lookup's own response time, added up (lookups overlap, so this isn't time waited)
+    ['lookups (summed)', ms(totalDurationMs)],
+    // network time varies run to run, so compute is the number to compare L1 differs with
+    ['compute (summed)', ms(computeTotal)],
+    ['avg per diffed link', diffed.length
+      ? `${duration(diffed.reduce((sum, d) => sum + d.durationMs, 0) / diffed.length)} total · ${duration(computeTotal / diffed.length)} compute`
+      : '–'],
+  ];
+  if (analysis.linkLookupsStopped) l1Rows.push(['stopped', analysis.linkLookupsStopped]);
+  addGroup(table, `L1 · ${analysis.l1Algorithm ?? '?'}`, l1Rows);
 
-  output.replaceChildren(
-    title,
-    snapshotLine(analysis),
-    timesSection(analysis),
-    metricsSection(analysis, open), // stats from running each differ on the snapshot vs the live page
-    expandableList('links', linksLabel, livePage.links.map((link, i) => linkItem(link, statuses[i]!)), open),
-    expandableList(
-      'malformed',
-      `${livePage.malformed.length} malformed`,
-      livePage.malformed.map((href) => [href]), // show malformed hrefs as plain text
-      open,
-    ),
-    // TEMPORARY: parser output, for testing extraction + boilerplate removal (see lib/parse/)
-    expandableList('blocks', `${livePage.blocks.length} content blocks`, livePage.blocks.map((b) => [b]), open),
-    expandableList('images', `${livePage.images.length} images`, livePage.images.map(imageItem), open),
-    expandableList(
-      'boilerplate-blocks',
-      `${livePage.boilerplate.blocks.length} boilerplate blocks (removed)`,
-      livePage.boilerplate.blocks.map((b) => [b]),
-      open,
-    ),
-    expandableList(
-      'boilerplate-links',
-      `${livePage.boilerplate.links.length} boilerplate links (removed)`,
-      livePage.boilerplate.links.map((link) => [plainLink(link)]),
-      open,
-    ),
-    expandableList(
-      'boilerplate-images',
-      `${livePage.boilerplate.images.length} boilerplate images (removed)`,
-      livePage.boilerplate.images.map(imageItem),
-      open,
-    ),
+  box.append(
+    table,
+    ...diffPreviews(analysis, open),
+    expandableList('links', `${links.length} links`, links.map((link, i) => linkItem(link, statuses[i]!)), open),
   );
-  if (analysis.linkLookupsStopped) {
-    const stopped = document.createElement('p');
-    stopped.textContent = `Link lookups stopped: ${analysis.linkLookupsStopped}`;
-    output.append(stopped);
+  return box;
+}
+
+// one row of the dev metrics table: a name, then its value
+type Row = [string, string | Node];
+
+// a heading row spanning both columns, then one row per [name, value]
+function addGroup(table: HTMLTableElement, heading: string, rows: Row[]) {
+  const th = document.createElement('th');
+  th.colSpan = 2;
+  th.textContent = heading;
+  table.insertRow().append(th);
+  for (const [name, value] of rows) {
+    const row = table.insertRow();
+    row.insertCell().textContent = name;
+    row.insertCell().append(value);
   }
 }
 
-// TEMPORARY: wall-clock time of each step so far (see Times in lib/analysis.ts), one row per step; "-" = not done yet
-function timesSection({ times = {}, totalDurationMs, linkDiffs = {} }: Analysis): HTMLElement {
-  const linkComputeMs = Object.values(linkDiffs).reduce((sum, d) => sum + computeMs(d), 0);
-  const steps: [string, number | undefined, string][] = [
-    ['total', times.total, 'since clicking Analyze'],
-    ['page', times.page, 'reading + parsing the live page'],
-    ['snapshot lookup', times.snapshotLookup, "asking Wayback if this page has a snapshot (and when it's from)"],
-    ['snapshot download', times.snapshotDownload, "downloading the snapshot's HTML, incl. waiting for a rate-limit slot"],
-    ['differs', times.differs, "running every differ for this page on snapshot vs live (breakdown below)"],
-    ['link lookups + diffs', times.linkLookups, 'first L1 lookup started -> latest lookup/diff finished, incl. the waits between them'],
-    // each lookup's own time, added up: skips the waits between them, so it's less than "link lookups"
-    ['sum of per-link times', totalDurationMs, "each link's own response time, added up (not counting waits)"],
-    // leaves out network time (which varies run to run), so it's the number to compare L1 differs with
-    ['L1 diff computing', linkComputeMs, 'parse + similarity for every L1 link and L1 differ, added up'],
-  ];
-  const section = document.createElement('div');
-  section.className = 'times';
-  const heading = document.createElement('h3');
-  heading.textContent = 'Time';
-  const table = document.createElement('table');
-  for (const [name, ms, description] of steps) {
-    const row = table.insertRow();
-    row.insertCell().textContent = name;
-    row.insertCell().textContent = ms === undefined ? '-' : duration(ms);
-    row.insertCell().textContent = description;
-  }
-  section.append(heading, table);
-  return section;
+// a duration, or "–" if that step isn't done yet
+function ms(value: number | undefined): string {
+  return value === undefined ? '–' : duration(value);
 }
 
 // every time shown in the popup: ms under 1s, s from 1s up
@@ -334,74 +323,41 @@ function linkStatus(link: string, analysis: Analysis): LinkStatus {
   return withFound('diffed', `${results.join(' · ')}${redirect} (${duration(diff.durationMs)} total, ${duration(computeMs(diff))} computing)`);
 }
 
-// one image in the list: its URL, then its alt text (if any)
-function imageItem({ src, alt }: Image): (string | Node)[] {
-  return alt ? [plainLink(src), ` — "${alt}"`] : [plainLink(src)];
+// the L0 differ's stats (usually one differ; a benchmark config can run several), or why there aren't any (yet)
+function l0Rows(analysis: Analysis): Row[] {
+  if (!analysis.snapshot) {
+    return [['status', analysis.snapshot === null || analysis.snapshotError ? 'no snapshot to compare against' : 'waiting for snapshot…']];
+  }
+  if (analysis.metricsError) return [['error', analysis.metricsError]];
+  if (!analysis.differMetrics) return [['status', 'downloading snapshot + diffing…']];
+  return analysis.differMetrics.flatMap((r): Row[] => {
+    const name = (row: string) => (analysis.differMetrics!.length > 1 ? `${r.algorithm}: ${row}` : row);
+    if ('error' in r) return [[name('error'), r.error]];
+    return [
+      [name('parse · diff · similarity'), `${duration(r.timings.parseMs)} · ${duration(r.timings.diffMs)} · ${duration(r.timings.similarityMs)}`],
+      [name('diff size'), `${(r.sizeBytes / 1024).toFixed(1)} KB`],
+      [name('similarity'), `${(r.similarity * 100).toFixed(1)}% (${r.label}; placeholder thresholds)`],
+    ];
+  });
 }
 
-// TEMPORARY: differ metrics (each differ run on snapshot vs live page): a table of stats, then a collapsible preview of each algorithm's diff
-function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTMLElement {
-  const section = document.createElement('div');
-  section.className = 'differ-metrics';
-  const heading = document.createElement('h3');
-  heading.textContent = 'Differ metrics: snapshot vs live page';
-  section.append(heading);
-
-  // nothing to show yet (or ever, if there's no snapshot)
-  if (!analysis.snapshot) {
-    section.append(analysis.snapshot === null || analysis.snapshotError ? 'No snapshot to compare against' : 'Waiting for snapshot...');
-    return section;
-  }
-  if (analysis.metricsError) {
-    section.append(`Differ metrics failed: ${analysis.metricsError}`);
-    return section;
-  }
-  if (!analysis.differMetrics) {
-    section.append('Fetching snapshot + diffing...');
-    return section;
-  }
-
-  // differs that ran without errors
-  const ok = analysis.differMetrics.filter((r): r is Extract<DifferMetrics, { timings: unknown }> => !('error' in r));
-
-  // one row per differ
-  const table = document.createElement('table');
-  table.innerHTML = '<tr><th>algorithm</th><th>parse</th><th>diff</th><th>similarity time</th><th>diff size</th><th>similarity</th><th>label (placeholder thresholds)</th></tr>';
-  for (const r of analysis.differMetrics) {
-    const row = table.insertRow();
-    row.insertCell().textContent = r.algorithm;
-    if ('error' in r) { // differ threw: show the error across the rest of the row
-      const cell = row.insertCell();
-      cell.colSpan = 6;
-      cell.textContent = `error: ${r.error}`;
-      continue;
-    }
-    for (const ms of [r.timings.parseMs, r.timings.diffMs, r.timings.similarityMs]) {
-      row.insertCell().textContent = duration(ms);
-    }
-    row.insertCell().textContent = `${(r.sizeBytes / 1024).toFixed(1)} KB`;
-    row.insertCell().textContent = `${(r.similarity * 100).toFixed(1)}%`;
-    row.insertCell().textContent = r.label;
-  }
-  section.append(table);
-
-  // one collapsible diff preview per differ: inserted text green, deleted red, unchanged dimmed (see style.css)
-  for (const r of ok) {
-    const { preview } = r;
+// one collapsible preview of each L0 differ's diff: inserted text green, deleted red, unchanged dimmed (see style.css).
+// TEMPORARY until the overlay highlights the L0 diff on the page itself
+function diffPreviews(analysis: Analysis, open: Set<string | undefined>): HTMLElement[] {
+  const ok = (analysis.differMetrics ?? []).filter((r): r is Extract<DifferMetrics, { timings: unknown }> => !('error' in r));
+  return ok.map(({ algorithm, preview }) => {
     // nothing to expand (e.g. the differ has no preview()); "0 changed runs" would wrongly suggest nothing changed
     if (!preview.length) {
       const note = document.createElement('p');
-      note.textContent = `${r.algorithm}: no preview`;
-      section.append(note);
-      continue;
+      note.textContent = `${algorithm}: no preview`;
+      return note;
     }
-    const key = `preview-${r.algorithm}`; // keeps it expanded across re-renders, like expandableList
-    const changed = preview.filter((p) => p.op !== 'equal').length;
+    const key = `preview-${algorithm}`; // keeps it expanded across re-renders, like expandableList
     const details = document.createElement('details');
     details.dataset.key = key;
     details.open = open.has(key);
     const summary = document.createElement('summary');
-    summary.textContent = `${r.algorithm}: ${changed} changed runs`;
+    summary.textContent = `L0 diff preview (${algorithm}): ${preview.filter((p) => p.op !== 'equal').length} changed runs`;
     const body = document.createElement('div');
     body.className = 'diff-preview';
     // each run of equal/inserted/deleted tokens becomes a span styled by its op
@@ -412,9 +368,8 @@ function metricsSection(analysis: Analysis, open: Set<string | undefined>): HTML
       body.append(span);
     }
     details.append(summary, body);
-    section.append(details);
-  }
-  return section;
+    return details;
+  });
 }
 
 // a link that opens in a new tab, showing its URL
@@ -426,17 +381,18 @@ function plainLink(link: string): HTMLAnchorElement {
   return a;
 }
 
-function snapshotLine({ snapshot, snapshotError, requestedDate }: Analysis): HTMLParagraphElement {
-  const el = document.createElement('p');
+// the L0 snapshot's date (linked) + status, or why there isn't one (yet)
+function snapshotText({ snapshot, snapshotError, requestedDate }: Analysis): HTMLSpanElement {
+  const el = document.createElement('span');
   if (snapshotError) {
-    el.textContent = `Snapshot lookup failed: ${snapshotError}`;
+    el.textContent = `lookup failed: ${snapshotError}`;
   } else if (snapshot === undefined) {
-    el.textContent = 'Looking up Wayback snapshot...';
+    el.textContent = 'looking up…';
   } else if (snapshot === null) {
-    el.textContent = requestedDate ? `No Wayback snapshot found near ${requestedDate}` : 'No Wayback snapshot found';
+    el.textContent = requestedDate ? `none found near ${requestedDate}` : 'none found';
   } else {
     el.append(
-      requestedDate ? `Snapshot closest to ${requestedDate}: ` : 'Latest snapshot: ',
+      requestedDate ? `closest to ${requestedDate}: ` : 'latest: ',
       snapshotLink(snapshot),
       ` (${statusLabel(snapshot.statusCode)})`,
     );
