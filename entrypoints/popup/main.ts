@@ -1,9 +1,12 @@
 import './style.css';
-import { analysisKey, type Analysis } from '@/lib/analysis';
+import { analysisKey, type Analysis, type RunState } from '@/lib/analysis';
+import { SHOW_DEV_METRICS } from '@/lib/devFlags';
+import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
 import type { Image } from '@/lib/parse/extract';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
+import { LOOKUP_INTERVAL_MS } from '@/lib/waybackRateLimit';
 
 // each L1 link's status, shown as a badge at the start of its line (and counted in the links heading, in this order).
 // `kind` picks the badge color (see .link-status in style.css)
@@ -29,18 +32,45 @@ interface LinkStatus {
   details: (string | Node)[]; // shown after the URL
 }
 
-// TODO: change extension to show results as overlay rather than through extension popup
+// the popup is just the analysis controls; results will be shown on the page itself (overlay).
+// with SHOW_DEV_METRICS on, the dev metrics are shown underneath the controls
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <h1>RefDelta</h1>
-  <label for="snapshot-date">Compare against date (optional)</label>
-  <input id="snapshot-date" type="date">
-  <button id="analyze" type="button">Analyze this page</button>
+  <div class="controls">
+    <label for="snapshot-date">Compare against date</label>
+    <input id="snapshot-date" type="date" title="optional; leave empty for the latest snapshot">
+    <label for="l0-algorithm">Page algorithm</label>
+    <select id="l0-algorithm">${options(L0_ALGORITHMS)}</select>
+    <label for="l1-algorithm">Link algorithm</label>
+    <select id="l1-algorithm">${options(L1_ALGORITHMS)}</select>
+  </div>
+  <div class="run-buttons">
+    <button id="analyze" type="button">Start</button>
+    <button id="pause" type="button" hidden>Pause</button>
+    <button id="resume" type="button" hidden>Resume</button>
+    <button id="stop" type="button" hidden>Stop</button>
+  </div>
+  <p id="progress" hidden></p>
   <div id="output"></div>
 `;
 
 const output = document.querySelector<HTMLDivElement>('#output')!;
 const dateInput = document.querySelector<HTMLInputElement>('#snapshot-date')!;
+const l0Select = document.querySelector<HTMLSelectElement>('#l0-algorithm')!;
+const l1Select = document.querySelector<HTMLSelectElement>('#l1-algorithm')!;
+l0Select.value = DEFAULT_L0_ALGORITHM;
+l1Select.value = DEFAULT_L1_ALGORITHM;
+const startButton = document.querySelector<HTMLButtonElement>('#analyze')!; // id kept: benchmark/playwright.ts clicks it
+const pauseButton = document.querySelector<HTMLButtonElement>('#pause')!;
+const resumeButton = document.querySelector<HTMLButtonElement>('#resume')!;
+const stopButton = document.querySelector<HTMLButtonElement>('#stop')!;
+const progress = document.querySelector<HTMLParagraphElement>('#progress')!;
+
+// one <option> per algorithm name
+function options(names: string[]): string {
+  return names.map((name) => `<option value="${name}">${name}</option>`).join('');
+}
 
 // display of results in popup is a TEMPORARY feature
 // background script does the work and saves results to storage.session -> closing the popup doesn't stop analysis
@@ -68,20 +98,87 @@ browser.storage.session.onChanged.addListener((changes) => {
   if (changes[key]) render(changes[key].newValue as Analysis | undefined);
 });
 
-document.querySelector<HTMLButtonElement>('#analyze')!.addEventListener('click', () => {
+startButton.addEventListener('click', () => {
   output.textContent = 'Analyzing...';
-  browser.runtime.sendMessage({ type: 'analyze-tab', tabId, date: dateInput.value || undefined });
+  browser.runtime.sendMessage({
+    type: 'analyze-tab',
+    tabId,
+    date: dateInput.value || undefined,
+    l0Algorithm: l0Select.value,
+    l1Algorithm: l1Select.value,
+  });
 });
 
+// the background saves the new runState right away, and render() swaps the buttons when it arrives
+pauseButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'pause-tab', tabId }));
+resumeButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'resume-tab', tabId }));
+stopButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'stop-tab', tabId }));
+
+// buttons follow the SAVED run state (not anything local to the popup), so reopening the popup mid-run shows the right ones:
+//   no run / done / stopped: Start; running: Pause + Stop; paused: Resume + Stop
+// the date + algorithm selects are locked during a run, so they always match what's running
+function renderRunControls(runState: RunState | undefined) {
+  const active = runState === 'running' || runState === 'paused';
+  startButton.hidden = active;
+  pauseButton.hidden = runState !== 'running';
+  resumeButton.hidden = runState !== 'paused';
+  stopButton.hidden = !active;
+  for (const input of [dateInput, l0Select, l1Select]) input.disabled = active;
+}
+
+// L1 progress, e.g. "38/50 links · ~30 s left" (+ "(first 50 of 212 on the page)" when capped by MAX_LINKS).
+// shown whenever there are links to check, with or without SHOW_DEV_METRICS
+function renderProgress(analysis: Analysis | undefined) {
+  const links = analysis?.linksToLookUp;
+  progress.hidden = !links;
+  if (!analysis || !links) return;
+  const { linkPhases = {}, linkLookups = {}, linkDiffs = {} } = analysis;
+
+  // a link is finished once it has a diff result, or its lookup failed (then it's never diffed)
+  const finished = links.filter((link) => linkDiffs[link] || 'error' in (linkLookups[link] ?? {})).length;
+  let text = `${finished}/${links.length} links`;
+  const onPage = analysis.livePage?.links.length ?? links.length;
+  if (onPage > links.length) text += ` (first ${links.length} of ${onPage} on the page)`;
+
+  if (analysis.runState === 'paused') text += ' · paused';
+  else if (analysis.runState === 'running') {
+    // each link waits for one lookup slot (24/min), which is the bottleneck; the rest (live fetch, snapshot download
+    // at ~456/min, diffing) mostly overlaps with later lookups. optimistic: other tabs' lookups share the same clock
+    const notStarted = links.filter((link) => !linkPhases[link]).length;
+    text += notStarted > 0 ? `, ~${roughDuration(notStarted * LOOKUP_INTERVAL_MS)} left` : ' · finishing…';
+  }
+  progress.textContent = text;
+}
+
+// "~40 s" under a minute (to the nearest 5s), otherwise whole minutes rounded up ("~7 min")
+function roughDuration(ms: number): string {
+  const s = ms / 1000;
+  return s < 60 ? `${Math.max(5, Math.round(s / 5) * 5)} s` : `${Math.ceil(s / 60)} min`;
+}
+
 function render(analysis: Analysis | undefined) {
+  renderRunControls(analysis?.runState);
+  renderProgress(analysis);
   if (!analysis) return; // not analyzed yet
   // Don't overwrite a date while the user is editing it as background progress re-renders.
   if (document.activeElement !== dateInput) dateInput.value = analysis.requestedDate ?? '';
+  // show which differs the shown results came from
+  if (analysis.l0Algorithm && document.activeElement !== l0Select) l0Select.value = analysis.l0Algorithm;
+  if (analysis.l1Algorithm && document.activeElement !== l1Select) l1Select.value = analysis.l1Algorithm;
   if (analysis.error) {
     output.textContent = analysis.error;
     return;
   }
-  const livePage = analysis.livePage!;
+  // everything below is dev-only output (results will move to the overlay)
+  if (!SHOW_DEV_METRICS) {
+    output.replaceChildren();
+    return;
+  }
+  if (!analysis.livePage) {
+    output.textContent = 'Analyzing...'; // run started; live page not parsed yet
+    return;
+  }
+  const livePage = analysis.livePage;
   const title = document.createElement('p');
   title.textContent = livePage.title;
 
@@ -190,7 +287,9 @@ function linkItem(link: string, { label, details }: LinkStatus): (string | Node)
 
 // a link's status: its result if it has one, otherwise the step it's on (see LinkPhase in lib/analysis.ts)
 function linkStatus(link: string, analysis: Analysis): LinkStatus {
-  const { linkPhases = {}, linkLookups = {}, linkDiffs = {}, linkLookupsStopped: stopped } = analysis;
+  const { linkPhases = {}, linkLookups = {}, linkDiffs = {} } = analysis;
+  // links that never got a result because lookups stopped (Wayback rate limit, or the user's stop button)
+  const stopped = analysis.linkLookupsStopped ?? (analysis.runState === 'stopped' ? 'stopped by user' : undefined);
   if (!analysis.linksToLookUp?.includes(link)) {
     return { label: 'not checked', details: [`only the first ${analysis.linksToLookUp?.length ?? 0} links are checked`] };
   }
