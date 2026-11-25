@@ -1,11 +1,12 @@
 import './style.css';
-import { ANALYSIS_SCOPES, analysisKey, LINK_COUNTS_PORT, type Analysis, type AnalysisScope, type LinkCounts, type RunState } from '@/lib/analysis';
+import { ANALYSIS_SCOPES, analysisKey, LINK_COUNTS_PORT, type RunSettings, type Analysis, type AnalysisScope, type LinkCounts, type RunState } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
 import { LOOKUP_INTERVAL_MS } from '@/lib/waybackRateLimit';
+import { estimateText, roughDuration } from '@/lib/estimate';
 
 // each L1 link's status, shown as a badge at the start of its line (and counted in the links heading, in this order).
 // `kind` picks the badge color (see .link-status in style.css)
@@ -45,6 +46,7 @@ app.innerHTML = `
   </div>
   <div class="scope" role="radiogroup" aria-label="What to analyze">
     <label><input type="radio" name="scope" value="visible"><span>Visible<small data-estimate="visible"></small></span></label>
+    <label><input type="radio" name="scope" value="select"><span>Select<small>pick on page</small></span></label>
     <label><input type="radio" name="scope" value="full"><span>Full page<small data-estimate="full"></small></span></label>
   </div>
   <p id="scope-warning" hidden></p>
@@ -115,6 +117,7 @@ for (const input of scopeInputs) {
   input.addEventListener('change', () => {
     browser.storage.local.set({ [SCOPE_KEY]: selectedScope() });
     renderScopeWarning();
+    renderStartLabel();
   });
 }
 
@@ -124,18 +127,13 @@ for (const input of scopeInputs) {
 const countsPort = browser.tabs.connect(tabId, { name: LINK_COUNTS_PORT });
 countsPort.onMessage.addListener((counts: LinkCounts) => {
   linkCounts = counts;
-  for (const scope of ANALYSIS_SCOPES) {
+  for (const scope of ['visible', 'full'] as const) {
     document.querySelector<HTMLElement>(`[data-estimate="${scope}"]`)!.textContent = estimateText(counts[scope]);
   }
   renderScopeWarning();
 });
 countsPort.onDisconnect.addListener(() => void browser.runtime.lastError); // no content script: leave estimates blank
 
-// e.g. "12 links · ~30 s": each link takes one Wayback lookup (24/min), the bottleneck (see progress estimate below)
-function estimateText(links: number): string {
-  if (links === 0) return 'no links';
-  return `${links} link${links === 1 ? '' : 's'} · ~${roughDuration(links * LOOKUP_INTERVAL_MS)}`;
-}
 
 // warn before a long full-page run (it can still be paused or stopped)
 function renderScopeWarning() {
@@ -152,17 +150,28 @@ function setScope(scope: AnalysisScope) {
   for (const input of scopeInputs) input.checked = input.value === scope;
 }
 
-startButton.addEventListener('click', () => {
+startButton.addEventListener('click', async () => {
+  const settings: RunSettings = { date: dateInput.value || undefined, l0Algorithm: l0Select.value, l1Algorithm: l1Select.value };
+  if (selectedScope() === 'select') {
+    // picking happens on the page, which the popup would cover (and clicking the page closes it anyway): hand the
+    // settings to the page's picker and close. the run starts once the selection is confirmed there
+    try {
+      await browser.tabs.sendMessage(tabId, { type: 'start-picking', settings });
+      window.close();
+    } catch {
+      output.textContent = "Can't pick blocks on this page (try reloading it).";
+    }
+    return;
+  }
   output.textContent = 'Analyzing...';
-  browser.runtime.sendMessage({
-    type: 'analyze-tab',
-    tabId,
-    scope: selectedScope(),
-    date: dateInput.value || undefined,
-    l0Algorithm: l0Select.value,
-    l1Algorithm: l1Select.value,
-  });
+  browser.runtime.sendMessage({ type: 'analyze-tab', tabId, scope: selectedScope(), ...settings });
 });
+
+// Select doesn't start a run right away: the button picks blocks first
+function renderStartLabel() {
+  startButton.textContent = selectedScope() === 'select' ? 'Pick blocks' : 'Start';
+}
+renderStartLabel();
 
 // the background saves the new runState right away, and render() swaps the buttons when it arrives
 pauseButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'pause-tab', tabId }));
@@ -204,11 +213,6 @@ function renderProgress(analysis: Analysis | undefined) {
   progress.textContent = text;
 }
 
-// "~40 s" under a minute (to the nearest 5s), otherwise whole minutes rounded up ("~7 min")
-function roughDuration(ms: number): string {
-  const s = ms / 1000;
-  return s < 60 ? `${Math.max(5, Math.round(s / 5) * 5)} s` : `${Math.ceil(s / 60)} min`;
-}
 
 function render(analysis: Analysis | undefined) {
   renderRunControls(analysis?.runState);
@@ -221,6 +225,7 @@ function render(analysis: Analysis | undefined) {
   if (analysis.l1Algorithm && document.activeElement !== l1Select) l1Select.value = analysis.l1Algorithm;
   if (analysis.scope) setScope(analysis.scope);
   renderScopeWarning();
+  renderStartLabel();
   if (analysis.error) {
     output.textContent = analysis.error;
     return;

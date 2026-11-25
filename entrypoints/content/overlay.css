@@ -6,7 +6,13 @@ refdelta-overlay,
 refdelta-mark,
 refdelta-tooltip,
 refdelta-tooltip-title,
-refdelta-tooltip-line {
+refdelta-tooltip-line,
+refdelta-pick-box,
+refdelta-pick-bar,
+refdelta-pick-text,
+refdelta-pick-summary,
+refdelta-pick-hint,
+refdelta-button {
   all: initial !important;
 }
 
@@ -72,7 +78,87 @@ refdelta-tooltip-line {
   overflow-wrap: anywhere !important;
 }
 
+/* --- block picker (Select scope; see picker.ts) --- */
+
+/* outline of the block under the cursor (dashed) or of a picked block (solid) */
+refdelta-pick-box {
+  position: absolute !important;
+  box-sizing: border-box !important;
+  border: 2px dashed #0969da !important;
+  border-radius: 4px !important;
+  background: rgba(9, 105, 218, 0.06) !important;
+  pointer-events: none !important; /* see refdelta-mark */
+}
+refdelta-pick-box[data-state='selected'] {
+  border-style: solid !important;
+  background: rgba(9, 105, 218, 0.12) !important;
+}
+
+/* bottom bar while picking: selection summary + hint, Analyze / Cancel */
+refdelta-pick-bar {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 16px !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  max-width: calc(100vw - 32px) !important;
+  box-sizing: border-box !important;
+  padding: 8px 8px 8px 14px !important;
+  border-radius: 8px !important;
+  background: #1f2328 !important;
+  color: #f0f6fc !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  pointer-events: auto !important;
+}
+refdelta-pick-text {
+  display: block !important;
+  font: inherit !important;
+  color: inherit !important;
+}
+refdelta-pick-summary,
+refdelta-pick-hint {
+  display: block !important;
+  font: inherit !important;
+  color: inherit !important;
+  white-space: nowrap !important;
+}
+refdelta-pick-summary {
+  font-weight: 600 !important;
+}
+refdelta-pick-hint {
+  font-size: 12px !important;
+  color: #9198a1 !important;
+}
+refdelta-button {
+  display: inline-block !important;
+  padding: 5px 12px !important;
+  border-radius: 6px !important;
+  font: 600 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+refdelta-button[data-variant='primary'] {
+  background: #1f883d !important;
+  color: #ffffff !important;
+}
+refdelta-button[data-variant='secondary'] {
+  background: #3d444d !important;
+  color: #f0f6fc !important;
+}
+refdelta-button[data-disabled] {
+  opacity: 0.4 !important;
+  cursor: default !important;
+}
+refdelta-button:focus-visible {
+  outline: 2px solid #4493f8 !important;
+  outline-offset: 2px !important;
+}
+
 /* `all: initial` would otherwise override the hidden attribute */
+refdelta-pick-box[hidden],
 refdelta-tooltip[hidden] {
   display: none !important;
 }

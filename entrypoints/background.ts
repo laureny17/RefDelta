@@ -18,14 +18,17 @@ let nextRunId = 0;
 // runs the analysis in the background so it keeps going after the popup closes
 export default defineBackground(() => {
   // listen for message from the popup to trigger analysis
-  browser.runtime.onMessage.addListener((msg) => {
+  browser.runtime.onMessage.addListener((msg, sender) => {
     if (msg.type === 'analyze-tab') {
+      // from the popup (which says which tab), or from a tab's content script (Select scope, after picking on the page)
+      const tabId: number | undefined = msg.tabId ?? sender.tab?.id;
+      if (tabId === undefined) return;
       const date = typeof msg.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(msg.date) ? msg.date : undefined;
       // unknown/missing names fall back to the defaults
       const l0Algorithm = L0_ALGORITHMS.includes(msg.l0Algorithm) ? msg.l0Algorithm : DEFAULT_L0_ALGORITHM;
       const l1Algorithm = L1_ALGORITHMS.includes(msg.l1Algorithm) ? msg.l1Algorithm : DEFAULT_L1_ALGORITHM;
       const scope: AnalysisScope = ANALYSIS_SCOPES.includes(msg.scope) ? msg.scope : 'full';
-      analyzeTab(msg.tabId, date, scope, { l0Algorithm, l1Algorithm });
+      analyzeTab(tabId, date, scope, { l0Algorithm, l1Algorithm });
     } else if (msg.type === 'pause-tab' || msg.type === 'resume-tab' || msg.type === 'stop-tab') {
       controlTab(msg.tabId, msg.type);
     }

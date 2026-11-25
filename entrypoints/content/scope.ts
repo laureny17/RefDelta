@@ -57,12 +57,23 @@ export function watchLinkCounts(port: Browser.runtime.Port) {
   });
 }
 
-// the page's L1 links that fall within `scope`. used both when a run starts and for the popup's link counts,
-// so the counts match what a run would check
-export function linksInScope(links: string[], scope: AnalysisScope): string[] {
+// the page's L1 links that fall within `scope`. used when a run starts and for the link counts shown before one,
+// so the counts match what a run would check. `blocks`: for 'select', the picked blocks
+export function linksInScope(links: string[], scope: AnalysisScope, blocks: Element[] = []): string[] {
   if (scope === 'full') return links;
-  const visible = visibleLinkUrls();
-  return links.filter((link) => visible.has(link));
+  const inScope = scope === 'visible' ? visibleLinkUrls() : linkUrlsIn(blocks);
+  return links.filter((link) => inScope.has(link));
+}
+
+// the (normalized) URLs of links inside any of `blocks` (or that are one of them)
+function linkUrlsIn(blocks: Element[]): Set<string> {
+  const urls = new Set<string>();
+  for (const block of blocks) {
+    const anchors = [...block.querySelectorAll<HTMLAnchorElement>('a[href]')];
+    if (block instanceof HTMLAnchorElement) anchors.push(block);
+    for (const anchor of anchors) if (URL.canParse(anchor.href)) urls.add(normalize(new URL(anchor.href)));
+  }
+  return urls;
 }
 
 // the (normalized) URLs of links that are at least partly on screen right now. a run reads this once when it
