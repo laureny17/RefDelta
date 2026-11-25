@@ -1,5 +1,5 @@
 import './style.css';
-import { analysisKey, type Analysis, type RunState } from '@/lib/analysis';
+import { ANALYSIS_SCOPES, analysisKey, type Analysis, type AnalysisScope, type RunState } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
@@ -43,6 +43,10 @@ app.innerHTML = `
     <label for="l1-algorithm">Link algorithm</label>
     <select id="l1-algorithm">${options(L1_ALGORITHMS)}</select>
   </div>
+  <div class="scope" role="radiogroup" aria-label="What to analyze">
+    <label><input type="radio" name="scope" value="visible"><span>Visible</span></label>
+    <label><input type="radio" name="scope" value="full"><span>Full page</span></label>
+  </div>
   <div class="run-buttons">
     <button id="analyze" type="button">Start</button>
     <button id="pause" type="button" hidden>Pause</button>
@@ -63,6 +67,7 @@ const startButton = document.querySelector<HTMLButtonElement>('#analyze')!; // i
 const pauseButton = document.querySelector<HTMLButtonElement>('#pause')!;
 const resumeButton = document.querySelector<HTMLButtonElement>('#resume')!;
 const stopButton = document.querySelector<HTMLButtonElement>('#stop')!;
+const scopeInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="scope"]')];
 const progress = document.querySelector<HTMLParagraphElement>('#progress')!;
 
 // one <option> per algorithm name
@@ -96,11 +101,28 @@ browser.storage.session.onChanged.addListener((changes) => {
   if (changes[key]) render(changes[key].newValue as Analysis | undefined);
 });
 
+// which part of the page to analyze: the last one picked (default: what's on screen)
+const SCOPE_KEY = 'popupScope'; // storage.local: a popup convenience only, not part of any results
+const savedScope = (await browser.storage.local.get(SCOPE_KEY))[SCOPE_KEY] as AnalysisScope | undefined;
+setScope(savedScope && ANALYSIS_SCOPES.includes(savedScope) ? savedScope : 'visible');
+for (const input of scopeInputs) {
+  input.addEventListener('change', () => browser.storage.local.set({ [SCOPE_KEY]: selectedScope() }));
+}
+
+function selectedScope(): AnalysisScope {
+  return (scopeInputs.find((input) => input.checked)?.value ?? 'visible') as AnalysisScope;
+}
+
+function setScope(scope: AnalysisScope) {
+  for (const input of scopeInputs) input.checked = input.value === scope;
+}
+
 startButton.addEventListener('click', () => {
   output.textContent = 'Analyzing...';
   browser.runtime.sendMessage({
     type: 'analyze-tab',
     tabId,
+    scope: selectedScope(),
     date: dateInput.value || undefined,
     l0Algorithm: l0Select.value,
     l1Algorithm: l1Select.value,
@@ -121,7 +143,7 @@ function renderRunControls(runState: RunState | undefined) {
   pauseButton.hidden = runState !== 'running';
   resumeButton.hidden = runState !== 'paused';
   stopButton.hidden = !active;
-  for (const input of [dateInput, l0Select, l1Select]) input.disabled = active;
+  for (const input of [dateInput, l0Select, l1Select, ...scopeInputs]) input.disabled = active;
 }
 
 // L1 progress, e.g. "38/50 links · ~30 s left".
@@ -161,6 +183,7 @@ function render(analysis: Analysis | undefined) {
   // show which differs the shown results came from
   if (analysis.l0Algorithm && document.activeElement !== l0Select) l0Select.value = analysis.l0Algorithm;
   if (analysis.l1Algorithm && document.activeElement !== l1Select) l1Select.value = analysis.l1Algorithm;
+  if (analysis.scope) setScope(analysis.scope);
   if (analysis.error) {
     output.textContent = analysis.error;
     return;

@@ -1,4 +1,4 @@
-import { analysisKey, CONFIG_KEY, type Analysis, type AnalysisUpdateMessage, type AnalysisConfig, type LinkLookup, type Times } from '@/lib/analysis';
+import { ANALYSIS_SCOPES, analysisKey, CONFIG_KEY, type Analysis, type AnalysisScope, type AnalysisUpdateMessage, type AnalysisConfig, type LinkLookup, type Times } from '@/lib/analysis';
 import { diffLink } from '@/lib/linkDiff';
 import type { PageContent } from '@/lib/parse/extract';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS, measureL0Diffs } from '@/lib/metrics';
@@ -24,7 +24,8 @@ export default defineBackground(() => {
       // unknown/missing names fall back to the defaults
       const l0Algorithm = L0_ALGORITHMS.includes(msg.l0Algorithm) ? msg.l0Algorithm : DEFAULT_L0_ALGORITHM;
       const l1Algorithm = L1_ALGORITHMS.includes(msg.l1Algorithm) ? msg.l1Algorithm : DEFAULT_L1_ALGORITHM;
-      analyzeTab(msg.tabId, date, { l0Algorithm, l1Algorithm });
+      const scope: AnalysisScope = ANALYSIS_SCOPES.includes(msg.scope) ? msg.scope : 'full';
+      analyzeTab(msg.tabId, date, scope, { l0Algorithm, l1Algorithm });
     } else if (msg.type === 'pause-tab' || msg.type === 'resume-tab' || msg.type === 'stop-tab') {
       controlTab(msg.tabId, msg.type);
     }
@@ -84,7 +85,7 @@ async function controlTab(tabId: number, action: 'pause-tab' | 'resume-tab' | 's
 // analyze a single tab, saving results to storage.session as they become available
 // TEMPORARY: using storage.session for now;
 // TODO: replace/complement with IndexedDB
-async function analyzeTab(tabId: number, requestedDate: string | undefined, selected: Pick<AnalysisConfig, 'l0Algorithm' | 'l1Algorithm'>) {
+async function analyzeTab(tabId: number, requestedDate: string | undefined, selectedScope: AnalysisScope, selected: Pick<AnalysisConfig, 'l0Algorithm' | 'l1Algorithm'>) {
   const key = analysisKey(tabId);
   const runId = ++nextRunId;
   currentRun.get(tabId)?.control.stop(); // a previous run on this tab (e.g. paused) stops starting new work
@@ -98,6 +99,8 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
   // overrides the popup's selected differs (the benchmark clicks the popup's Start button with the selects' defaults)
   const configData = await browser.storage.session.get(CONFIG_KEY);
   const config: AnalysisConfig = { ...selected, ...(configData[CONFIG_KEY] as Partial<AnalysisConfig> | undefined) };
+  // a benchmark run always covers the full page (it clicks the popup's Start, whatever scope is selected there)
+  const scope: AnalysisScope = configData[CONFIG_KEY] ? 'full' : selectedScope;
 
   // wall-clock time of each step (see Times); total and linkLookups are refreshed on every update
   const start = performance.now();
@@ -109,6 +112,7 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
     runState: 'running',
     times,
     requestedDate,
+    scope,
     l0Algorithm: config.l0Algorithm,
     l1Algorithm: config.l1Algorithm,
   };
@@ -130,7 +134,7 @@ async function analyzeTab(tabId: number, requestedDate: string | undefined, sele
   // try to get the page links from the content script
   try {
     ({ html: liveHtml, ...livePage } = await timed<PageContent & { html: string }>(times, 'page', () =>
-      browser.tabs.sendMessage(tabId, { type: 'analyze' }),
+      browser.tabs.sendMessage(tabId, { type: 'analyze', scope }),
     ));
   } catch (err) {
     await finish({ error: `Could not analyze page: ${err}` });

@@ -20,6 +20,7 @@ export interface Analysis {
   error?: string; // analysis failed
   runState?: RunState;
   requestedDate?: string; // YYYY-MM-DD selected by the user; undefined = latest L0 snapshot
+  scope?: AnalysisScope; // which part of the page this run covers (picked in the popup)
   l0Algorithm?: string; // differ picked in the popup for L0
   l1Algorithm?: string; // differ picked in the popup for L1 links
   livePage?: PageContent; // what the content script sends back (see lib/parse/extract.ts)
@@ -35,6 +36,14 @@ export interface Analysis {
   totalDurationMs?: number; // sum of each link lookup's own time (lookups overlap, so this isn't time waited)
   times?: Times;
 }
+
+// which part of the page an analysis covers (picked in the popup):
+//   visible: links at least partly on screen when Start is pressed
+//   full: every link on the page
+// only L1 links are scoped (that's where the time goes: one 2.5 s lookup each); the L0 page is still diffed whole
+// TODO: only score/highlight the L0 changes inside the scope, once L0 changes are highlighted on the page
+export type AnalysisScope = 'visible' | 'full';
+export const ANALYSIS_SCOPES: AnalysisScope[] = ['visible', 'full'];
 
 // whether the run is still going (set from the popup's pause / resume / stop buttons)
 //   running: in progress

@@ -57,6 +57,43 @@ h1 {
   opacity: 0.8;
 }
 
+/* scope choice: a segmented control (radio buttons styled as joined buttons) */
+.scope {
+  display: flex;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.scope label {
+  flex: 1;
+  cursor: pointer;
+}
+.scope label + label {
+  border-left: 1px solid rgba(128, 128, 128, 0.4);
+}
+.scope input {
+  position: absolute;
+  opacity: 0; /* still focusable + arrow-key navigable */
+}
+.scope span {
+  display: block;
+  padding: 0.4em 0.6em;
+  text-align: center;
+}
+.scope input:checked + span {
+  background: rgba(100, 108, 255, 0.2);
+  font-weight: 600;
+}
+.scope input:focus-visible + span {
+  outline: 2px solid #646cff;
+  outline-offset: -2px;
+}
+.scope input:disabled + span {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .run-buttons {
   display: flex;
   gap: 0.5rem;
