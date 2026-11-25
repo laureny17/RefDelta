@@ -1,11 +1,12 @@
 import './style.css';
-import { analysisKey, type Analysis, type RunState } from '@/lib/analysis';
+import { ANALYSIS_SCOPES, analysisKey, LINK_COUNTS_PORT, type RunSettings, type Analysis, type AnalysisScope, type LinkCounts, type RunState } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
 import type { DifferMetrics } from '@/lib/metrics';
 import type { Snapshot } from '@/lib/wayback';
 import { LOOKUP_INTERVAL_MS } from '@/lib/waybackRateLimit';
+import { estimateText, roughDuration } from '@/lib/estimate';
 
 // each L1 link's status, shown as a badge at the start of its line (and counted in the links heading, in this order).
 // `kind` picks the badge color (see .link-status in style.css)
@@ -43,6 +44,12 @@ app.innerHTML = `
     <label for="l1-algorithm">Link algorithm</label>
     <select id="l1-algorithm">${options(L1_ALGORITHMS)}</select>
   </div>
+  <div class="scope" role="radiogroup" aria-label="What to analyze">
+    <label><input type="radio" name="scope" value="visible"><span>Visible<small data-estimate="visible"></small></span></label>
+    <label><input type="radio" name="scope" value="select"><span>Select<small>pick on page</small></span></label>
+    <label><input type="radio" name="scope" value="full"><span>Full page<small data-estimate="full"></small></span></label>
+  </div>
+  <p id="scope-warning" hidden></p>
   <div class="run-buttons">
     <button id="analyze" type="button">Start</button>
     <button id="pause" type="button" hidden>Pause</button>
@@ -63,6 +70,7 @@ const startButton = document.querySelector<HTMLButtonElement>('#analyze')!; // i
 const pauseButton = document.querySelector<HTMLButtonElement>('#pause')!;
 const resumeButton = document.querySelector<HTMLButtonElement>('#resume')!;
 const stopButton = document.querySelector<HTMLButtonElement>('#stop')!;
+const scopeInputs = [...document.querySelectorAll<HTMLInputElement>('input[name="scope"]')];
 const progress = document.querySelector<HTMLParagraphElement>('#progress')!;
 
 // one <option> per algorithm name
@@ -87,6 +95,15 @@ if (tabIdFromUrl) {
 }
 const key = analysisKey(tabId);
 
+// which part of the page to analyze: the last one picked (default: what's on screen)
+const SCOPE_KEY = 'popupScope'; // storage.local: a popup convenience only, not part of any results
+const savedScope = (await browser.storage.local.get(SCOPE_KEY))[SCOPE_KEY] as AnalysisScope | undefined;
+setScope(savedScope && ANALYSIS_SCOPES.includes(savedScope) ? savedScope : 'visible');
+const scopeWarning = document.querySelector<HTMLParagraphElement>('#scope-warning')!;
+let linkCounts: LinkCounts | undefined; // filled in once the page answers (below)
+const LONG_RUN_MS = 2 * 60 * 1000; // warn before a full-page run longer than this
+let isRunActive = false; // set by renderRunControls; the warning is only for starting a run
+
 // show any results from an earlier run of the same page on this tab
 const stored = await browser.storage.session.get(key);
 render(stored[key] as Analysis | undefined);
@@ -96,16 +113,65 @@ browser.storage.session.onChanged.addListener((changes) => {
   if (changes[key]) render(changes[key].newValue as Analysis | undefined);
 });
 
-startButton.addEventListener('click', () => {
-  output.textContent = 'Analyzing...';
-  browser.runtime.sendMessage({
-    type: 'analyze-tab',
-    tabId,
-    date: dateInput.value || undefined,
-    l0Algorithm: l0Select.value,
-    l1Algorithm: l1Select.value,
+for (const input of scopeInputs) {
+  input.addEventListener('change', () => {
+    browser.storage.local.set({ [SCOPE_KEY]: selectedScope() });
+    renderScopeWarning();
+    renderStartLabel();
   });
+}
+
+// each scope's link count + estimated time, kept up to date while the popup is open (the page re-sends the counts as
+// it's scrolled; see watchLinkCounts in entrypoints/content/scope.ts). the connection closes with the popup.
+// on pages without our content script (e.g. browser pages) nothing answers, so the estimates stay blank
+const countsPort = browser.tabs.connect(tabId, { name: LINK_COUNTS_PORT });
+countsPort.onMessage.addListener((counts: LinkCounts) => {
+  linkCounts = counts;
+  for (const scope of ['visible', 'full'] as const) {
+    document.querySelector<HTMLElement>(`[data-estimate="${scope}"]`)!.textContent = estimateText(counts[scope]);
+  }
+  renderScopeWarning();
 });
+countsPort.onDisconnect.addListener(() => void browser.runtime.lastError); // no content script: leave estimates blank
+
+
+// warn before a long full-page run (it can still be paused or stopped)
+function renderScopeWarning() {
+  const ms = linkCounts && !isRunActive && selectedScope() === 'full' ? linkCounts.full * LOOKUP_INTERVAL_MS : 0;
+  scopeWarning.hidden = ms <= LONG_RUN_MS;
+  scopeWarning.textContent = `Checking every link will take about ${roughDuration(ms)}. You can pause or stop anytime.`;
+}
+
+function selectedScope(): AnalysisScope {
+  return (scopeInputs.find((input) => input.checked)?.value ?? 'visible') as AnalysisScope;
+}
+
+function setScope(scope: AnalysisScope) {
+  for (const input of scopeInputs) input.checked = input.value === scope;
+}
+
+startButton.addEventListener('click', async () => {
+  const settings: RunSettings = { date: dateInput.value || undefined, l0Algorithm: l0Select.value, l1Algorithm: l1Select.value };
+  if (selectedScope() === 'select') {
+    // picking happens on the page, which the popup would cover (and clicking the page closes it anyway): hand the
+    // settings to the page's picker and close. the run starts once the selection is confirmed there
+    try {
+      await browser.tabs.sendMessage(tabId, { type: 'start-picking', settings });
+      window.close();
+    } catch {
+      output.textContent = "Can't pick blocks on this page (try reloading it).";
+    }
+    return;
+  }
+  output.textContent = 'Analyzing...';
+  browser.runtime.sendMessage({ type: 'analyze-tab', tabId, scope: selectedScope(), ...settings });
+});
+
+// Select doesn't start a run right away: the button picks blocks first
+function renderStartLabel() {
+  startButton.textContent = selectedScope() === 'select' ? 'Pick blocks' : 'Start';
+}
+renderStartLabel();
 
 // the background saves the new runState right away, and render() swaps the buttons when it arrives
 pauseButton.addEventListener('click', () => browser.runtime.sendMessage({ type: 'pause-tab', tabId }));
@@ -121,7 +187,8 @@ function renderRunControls(runState: RunState | undefined) {
   pauseButton.hidden = runState !== 'running';
   resumeButton.hidden = runState !== 'paused';
   stopButton.hidden = !active;
-  for (const input of [dateInput, l0Select, l1Select]) input.disabled = active;
+  for (const input of [dateInput, l0Select, l1Select, ...scopeInputs]) input.disabled = active;
+  isRunActive = active;
 }
 
 // L1 progress, e.g. "38/50 links · ~30 s left".
@@ -146,11 +213,6 @@ function renderProgress(analysis: Analysis | undefined) {
   progress.textContent = text;
 }
 
-// "~40 s" under a minute (to the nearest 5s), otherwise whole minutes rounded up ("~7 min")
-function roughDuration(ms: number): string {
-  const s = ms / 1000;
-  return s < 60 ? `${Math.max(5, Math.round(s / 5) * 5)} s` : `${Math.ceil(s / 60)} min`;
-}
 
 function render(analysis: Analysis | undefined) {
   renderRunControls(analysis?.runState);
@@ -161,6 +223,9 @@ function render(analysis: Analysis | undefined) {
   // show which differs the shown results came from
   if (analysis.l0Algorithm && document.activeElement !== l0Select) l0Select.value = analysis.l0Algorithm;
   if (analysis.l1Algorithm && document.activeElement !== l1Select) l1Select.value = analysis.l1Algorithm;
+  if (analysis.scope) setScope(analysis.scope);
+  renderScopeWarning();
+  renderStartLabel();
   if (analysis.error) {
     output.textContent = analysis.error;
     return;

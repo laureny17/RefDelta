@@ -57,6 +57,65 @@ h1 {
   opacity: 0.8;
 }
 
+/* scope choice: a segmented control (radio buttons styled as joined buttons) */
+.scope {
+  display: flex;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.scope label {
+  flex: 1;
+  display: flex; /* so the span (and its selected tint) fills the full height */
+  cursor: pointer;
+}
+.scope label + label {
+  border-left: 1px solid rgba(128, 128, 128, 0.4);
+}
+.scope input {
+  position: absolute;
+  opacity: 0; /* still focusable + arrow-key navigable */
+}
+.scope span {
+  flex: 1;
+  padding: 0.4em 0.3em;
+  text-align: center;
+}
+.scope small {
+  display: block;
+  white-space: nowrap; /* "212 links · ~9 min" on one line */
+  font-size: 0.8em;
+  font-weight: 400;
+  opacity: 0.7;
+}
+.scope small:empty {
+  display: none;
+}
+/* selected: shown by the background only (bolding the text would make it wider, so it'd jump on click) */
+.scope input:checked + span {
+  background: rgba(100, 108, 255, 0.2);
+}
+.scope input:focus-visible + span {
+  outline: 2px solid #646cff;
+  outline-offset: -2px;
+}
+.scope input:disabled + span {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#scope-warning {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.85em;
+  color: #9a6700;
+}
+@media (prefers-color-scheme: dark) {
+  #scope-warning {
+    color: #d29922;
+  }
+}
+
 .run-buttons {
   display: flex;
   gap: 0.5rem;

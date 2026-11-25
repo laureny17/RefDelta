@@ -20,6 +20,7 @@ export interface Analysis {
   error?: string; // analysis failed
   runState?: RunState;
   requestedDate?: string; // YYYY-MM-DD selected by the user; undefined = latest L0 snapshot
+  scope?: AnalysisScope; // which part of the page this run covers (picked in the popup)
   l0Algorithm?: string; // differ picked in the popup for L0
   l1Algorithm?: string; // differ picked in the popup for L1 links
   livePage?: PageContent; // what the content script sends back (see lib/parse/extract.ts)
@@ -35,6 +36,22 @@ export interface Analysis {
   totalDurationMs?: number; // sum of each link lookup's own time (lookups overlap, so this isn't time waited)
   times?: Times;
 }
+
+// which part of the page an analysis covers (picked in the popup):
+//   visible: links at least partly on screen when Start is pressed
+//   select: links inside the blocks the user picked on the page (see entrypoints/content/picker.ts)
+//   full: every link on the page
+// only L1 links are scoped (that's where the time goes: one 2.5 s lookup each); the L0 page is still diffed whole
+// TODO: only score/highlight the L0 changes inside the scope, once L0 changes are highlighted on the page
+export type AnalysisScope = 'visible' | 'select' | 'full';
+export const ANALYSIS_SCOPES: AnalysisScope[] = ['visible', 'select', 'full'];
+
+// how many L1 links each scope would check on the open page (content script -> popup, for time estimates).
+// not for 'select': that depends on what gets picked, so its count is shown on the page while picking
+export type LinkCounts = Record<Exclude<AnalysisScope, 'select'>, number>;
+// name of the connection the popup opens to the content script to get live LinkCounts
+// (see watchLinkCounts in entrypoints/content/scope.ts)
+export const LINK_COUNTS_PORT = 'link-counts';
 
 // whether the run is still going (set from the popup's pause / resume / stop buttons)
 //   running: in progress
@@ -63,6 +80,14 @@ export type LinkPhase =
 export type LinkLookup =
   | { snapshot: Snapshot | null; durationMs: number }
   | { error: string; durationMs: number };
+
+// what a run needs besides its scope; the popup sends these to the content script when Select starts picking,
+// so they can go with the run once the user confirms the selection on the page
+export interface RunSettings {
+  date?: string; // YYYY-MM-DD
+  l0Algorithm: string;
+  l1Algorithm: string;
+}
 
 // sent from the background to the tab's content script on every save, so the overlay (L1 link badges) can update
 // (content scripts can't read storage.session in Firefox, which doesn't support storage.session.setAccessLevel)
