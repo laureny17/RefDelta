@@ -1,13 +1,18 @@
 import './overlay.css'; // injected through the manifest (see overlay.css)
-import type { AnalysisUpdateMessage } from '@/lib/analysis';
+import { LINK_COUNTS_PORT, type AnalysisUpdateMessage } from '@/lib/analysis';
 import { extract } from '@/lib/parse/extract';
 import { LinkHighlights } from './highlights';
-import { visibleLinkUrls } from './scope';
+import { linksInScope, watchLinkCounts } from './scope';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
   main() {
     const highlights = new LinkHighlights();
+
+    // the popup's live link count for each scope (shown with an estimated time on its scope buttons)
+    browser.runtime.onConnect.addListener((port) => {
+      if (port.name === LINK_COUNTS_PORT) watchLinkCounts(port);
+    });
 
     browser.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       // the background re-sends the analysis on every saved change
@@ -24,12 +29,9 @@ export default defineContentScript({
         //       runs, so diffs could flag script-added content as changes. can alternatively fetch the live page's raw HTML instead, so
         //       both sides are read the same way, and set aside JS-added content somewhere else?
         const content = extract(document, location.href);
-        // "visible" scope: only the links on screen right now become L1 links (the page's text is still read whole,
-        // since the L0 page is diffed whole)
-        if (msg.scope === 'visible') {
-          const visible = visibleLinkUrls();
-          content.links = content.links.filter((link) => visible.has(link));
-        }
+        // only the links in scope become L1 links (e.g. "visible": the ones on screen right now). the page's text is
+        // still read whole, since the L0 page is diffed whole
+        content.links = linksInScope(content.links, msg.scope === 'visible' ? 'visible' : 'full');
         console.log('[RefDelta]', content); // full parse output (blocks, text, links, ...) for debugging
         // + the page's HTML, for diffing against its snapshot (not stored; see background.ts)
         sendResponse({ ...content, html: document.documentElement.outerHTML });

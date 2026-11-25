@@ -1,5 +1,5 @@
 import './style.css';
-import { ANALYSIS_SCOPES, analysisKey, type Analysis, type AnalysisScope, type RunState } from '@/lib/analysis';
+import { ANALYSIS_SCOPES, analysisKey, LINK_COUNTS_PORT, type Analysis, type AnalysisScope, type LinkCounts, type RunState } from '@/lib/analysis';
 import { SHOW_DEV_METRICS } from '@/lib/devFlags';
 import { DEFAULT_L0_ALGORITHM, DEFAULT_L1_ALGORITHM, L0_ALGORITHMS, L1_ALGORITHMS } from '@/lib/metrics';
 import type { LinkDiff } from '@/lib/linkDiff';
@@ -44,9 +44,10 @@ app.innerHTML = `
     <select id="l1-algorithm">${options(L1_ALGORITHMS)}</select>
   </div>
   <div class="scope" role="radiogroup" aria-label="What to analyze">
-    <label><input type="radio" name="scope" value="visible"><span>Visible</span></label>
-    <label><input type="radio" name="scope" value="full"><span>Full page</span></label>
+    <label><input type="radio" name="scope" value="visible"><span>Visible<small data-estimate="visible"></small></span></label>
+    <label><input type="radio" name="scope" value="full"><span>Full page<small data-estimate="full"></small></span></label>
   </div>
+  <p id="scope-warning" hidden></p>
   <div class="run-buttons">
     <button id="analyze" type="button">Start</button>
     <button id="pause" type="button" hidden>Pause</button>
@@ -92,6 +93,15 @@ if (tabIdFromUrl) {
 }
 const key = analysisKey(tabId);
 
+// which part of the page to analyze: the last one picked (default: what's on screen)
+const SCOPE_KEY = 'popupScope'; // storage.local: a popup convenience only, not part of any results
+const savedScope = (await browser.storage.local.get(SCOPE_KEY))[SCOPE_KEY] as AnalysisScope | undefined;
+setScope(savedScope && ANALYSIS_SCOPES.includes(savedScope) ? savedScope : 'visible');
+const scopeWarning = document.querySelector<HTMLParagraphElement>('#scope-warning')!;
+let linkCounts: LinkCounts | undefined; // filled in once the page answers (below)
+const LONG_RUN_MS = 2 * 60 * 1000; // warn before a full-page run longer than this
+let isRunActive = false; // set by renderRunControls; the warning is only for starting a run
+
 // show any results from an earlier run of the same page on this tab
 const stored = await browser.storage.session.get(key);
 render(stored[key] as Analysis | undefined);
@@ -101,12 +111,37 @@ browser.storage.session.onChanged.addListener((changes) => {
   if (changes[key]) render(changes[key].newValue as Analysis | undefined);
 });
 
-// which part of the page to analyze: the last one picked (default: what's on screen)
-const SCOPE_KEY = 'popupScope'; // storage.local: a popup convenience only, not part of any results
-const savedScope = (await browser.storage.local.get(SCOPE_KEY))[SCOPE_KEY] as AnalysisScope | undefined;
-setScope(savedScope && ANALYSIS_SCOPES.includes(savedScope) ? savedScope : 'visible');
 for (const input of scopeInputs) {
-  input.addEventListener('change', () => browser.storage.local.set({ [SCOPE_KEY]: selectedScope() }));
+  input.addEventListener('change', () => {
+    browser.storage.local.set({ [SCOPE_KEY]: selectedScope() });
+    renderScopeWarning();
+  });
+}
+
+// each scope's link count + estimated time, kept up to date while the popup is open (the page re-sends the counts as
+// it's scrolled; see watchLinkCounts in entrypoints/content/scope.ts). the connection closes with the popup.
+// on pages without our content script (e.g. browser pages) nothing answers, so the estimates stay blank
+const countsPort = browser.tabs.connect(tabId, { name: LINK_COUNTS_PORT });
+countsPort.onMessage.addListener((counts: LinkCounts) => {
+  linkCounts = counts;
+  for (const scope of ANALYSIS_SCOPES) {
+    document.querySelector<HTMLElement>(`[data-estimate="${scope}"]`)!.textContent = estimateText(counts[scope]);
+  }
+  renderScopeWarning();
+});
+countsPort.onDisconnect.addListener(() => void browser.runtime.lastError); // no content script: leave estimates blank
+
+// e.g. "12 links · ~30 s": each link takes one Wayback lookup (24/min), the bottleneck (see progress estimate below)
+function estimateText(links: number): string {
+  if (links === 0) return 'no links';
+  return `${links} link${links === 1 ? '' : 's'} · ~${roughDuration(links * LOOKUP_INTERVAL_MS)}`;
+}
+
+// warn before a long full-page run (it can still be paused or stopped)
+function renderScopeWarning() {
+  const ms = linkCounts && !isRunActive && selectedScope() === 'full' ? linkCounts.full * LOOKUP_INTERVAL_MS : 0;
+  scopeWarning.hidden = ms <= LONG_RUN_MS;
+  scopeWarning.textContent = `Checking every link will take about ${roughDuration(ms)}. You can pause or stop anytime.`;
 }
 
 function selectedScope(): AnalysisScope {
@@ -144,6 +179,7 @@ function renderRunControls(runState: RunState | undefined) {
   resumeButton.hidden = runState !== 'paused';
   stopButton.hidden = !active;
   for (const input of [dateInput, l0Select, l1Select, ...scopeInputs]) input.disabled = active;
+  isRunActive = active;
 }
 
 // L1 progress, e.g. "38/50 links · ~30 s left".
@@ -184,6 +220,7 @@ function render(analysis: Analysis | undefined) {
   if (analysis.l0Algorithm && document.activeElement !== l0Select) l0Select.value = analysis.l0Algorithm;
   if (analysis.l1Algorithm && document.activeElement !== l1Select) l1Select.value = analysis.l1Algorithm;
   if (analysis.scope) setScope(analysis.scope);
+  renderScopeWarning();
   if (analysis.error) {
     output.textContent = analysis.error;
     return;

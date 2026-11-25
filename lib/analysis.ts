@@ -45,6 +45,12 @@ export interface Analysis {
 export type AnalysisScope = 'visible' | 'full';
 export const ANALYSIS_SCOPES: AnalysisScope[] = ['visible', 'full'];
 
+// how many L1 links each scope would check on the open page (content script -> popup, for time estimates)
+export type LinkCounts = Record<AnalysisScope, number>;
+// name of the connection the popup opens to the content script to get live LinkCounts
+// (see watchLinkCounts in entrypoints/content/scope.ts)
+export const LINK_COUNTS_PORT = 'link-counts';
+
 // whether the run is still going (set from the popup's pause / resume / stop buttons)
 //   running: in progress
 //   paused: no new L1 lookups start until resumed (ones already sent still finish)

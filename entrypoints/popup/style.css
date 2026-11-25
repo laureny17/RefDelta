@@ -81,9 +81,18 @@ h1 {
   padding: 0.4em 0.6em;
   text-align: center;
 }
+.scope small {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 400;
+  opacity: 0.7;
+}
+.scope small:empty {
+  display: none;
+}
+/* selected: shown by the background only (bolding the text would make it wider, so it'd jump on click) */
 .scope input:checked + span {
   background: rgba(100, 108, 255, 0.2);
-  font-weight: 600;
 }
 .scope input:focus-visible + span {
   outline: 2px solid #646cff;
@@ -92,6 +101,17 @@ h1 {
 .scope input:disabled + span {
   opacity: 0.5;
   cursor: default;
+}
+
+#scope-warning {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.85em;
+  color: #9a6700;
+}
+@media (prefers-color-scheme: dark) {
+  #scope-warning {
+    color: #d29922;
+  }
 }
 
 .run-buttons {
